@@ -1,0 +1,8 @@
+{
+  "project_name": "GiftMe",
+  "data_source": { "dns": "postgres://postgres:password@gm-postgres:5432/blnk?sslmode=disable" },
+  "redis": { "dns": "gm-redis:6379" },
+  "typesense": { "dns": "http://gm-typesense:8108" },
+  "type_sense_key": "blnk-api-key",
+  "server": { "port": "5001", "secure": true, "secret_key": "<generate with: openssl rand -hex 24>" }
+}

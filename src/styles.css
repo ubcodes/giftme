@@ -1,0 +1,54 @@
+@import 'tailwindcss';
+
+/* Theme follows the visitor's system until they pick one with the toggle. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Same type as the personal site. */
+@theme {
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Belleza', system-ui, sans-serif;
+  --font-editorial: 'Bilbo', cursive;
+}
+
+html {
+  background-color: #fafafa;
+  color-scheme: light;
+}
+
+html.dark {
+  background-color: #0a0a0a;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(2px);
+}
+
+/* Gentle entrance for landing sections. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.7s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+}

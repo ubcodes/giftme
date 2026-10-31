@@ -1,0 +1,63 @@
+# Blnk Core for GiftMe.
+# Container names are prefixed `gm-` so they don't clash with other Blnk stacks on this machine.
+name: giftme-blnk
+
+services:
+  gm-server:
+    image: ${BLNK_IMAGE:-ghcr.io/blnkfinance/blnk:0.15.5}
+    container_name: gm-server
+    restart: on-failure
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["blnk migrate up && blnk start"]
+    ports:
+      - "5201:5001"
+    depends_on:
+      gm-postgres:
+        condition: service_healthy
+      gm-redis:
+        condition: service_started
+    volumes:
+      - ./blnk.json:/blnk.json:ro
+
+  gm-worker:
+    image: ${BLNK_IMAGE:-ghcr.io/blnkfinance/blnk:0.15.5}
+    container_name: gm-worker
+    restart: on-failure
+    entrypoint: ["blnk", "workers"]
+    depends_on:
+      - gm-server
+    volumes:
+      - ./blnk.json:/blnk.json:ro
+
+  gm-redis:
+    image: redis:7.2.4
+    container_name: gm-redis
+    restart: on-failure
+
+  gm-postgres:
+    image: postgres:16
+    container_name: gm-postgres
+    restart: on-failure
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: blnk
+    volumes:
+      - gm_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gm-typesense:
+    image: typesense/typesense:29.0
+    container_name: gm-typesense
+    restart: on-failure
+    command: ["--data-dir", "/data", "--api-key=blnk-api-key", "--listen-port", "8108"]
+    volumes:
+      - gm_typesense_data:/data
+
+volumes:
+  gm_pg_data:
+  gm_typesense_data:

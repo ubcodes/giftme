@@ -1,0 +1,152 @@
+import { Link } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
+
+export const glassCard =
+  'border border-white/60 bg-white/60 shadow-sm shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/40'
+
+/** The soft purple-pink-blue wash, kept faint behind the header. */
+export function Glow({ tall = false }: { tall?: boolean }) {
+  return (
+    <div aria-hidden="true" className={`pointer-events-none absolute inset-x-0 top-0 overflow-hidden ${tall ? 'h-[820px]' : 'h-[560px]'}`}>
+      <div className="absolute -top-56 left-1/2 h-[520px] w-[1100px] -translate-x-1/2 rounded-full bg-gradient-to-r from-purple-400/25 via-pink-400/20 to-blue-400/20 blur-3xl dark:from-purple-500/15 dark:via-pink-500/10 dark:to-blue-500/10" />
+    </div>
+  )
+}
+
+export function Logo({ size = 'md' }: { size?: 'md' | 'lg' }) {
+  return (
+    <Link to="/" className="group inline-flex items-baseline gap-0.5" aria-label="GiftMe home">
+      <span className={`font-display font-medium tracking-tight ${size === 'lg' ? 'text-4xl' : 'text-[28px]'}`}>Gift</span>
+      <span className={`font-editorial bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 bg-clip-text text-transparent ${size === 'lg' ? 'text-5xl' : 'text-[34px]'}`}>
+        me
+      </span>
+    </Link>
+  )
+}
+
+export function Bar({ percent }: { percent: number }) {
+  return (
+    <div
+      className="h-1 flex-1 overflow-hidden rounded-full bg-neutral-200/80 dark:bg-neutral-800"
+      role="progressbar"
+      aria-valuenow={Math.round(percent)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <div
+        className="h-full rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 transition-[width] duration-700"
+        style={{ width: `${percent}%` }}
+      />
+    </div>
+  )
+}
+
+export function Avatar({ src, name, size = 44 }: { src: string | null | undefined; name: string; size?: number }) {
+  const initials = name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 opacity-75 blur-sm" />
+      {src ? (
+        <img src={src} alt={name} className="relative size-full rounded-full object-cover ring-2 ring-white/70 dark:ring-neutral-900/70" />
+      ) : (
+        <div
+          className="font-display relative grid size-full place-items-center rounded-full bg-neutral-100 text-neutral-600 ring-2 ring-white/70 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-900/70"
+          style={{ fontSize: size * 0.4 }}
+        >
+          {initials || '?'}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function GiftIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="8" width="18" height="13" rx="2" />
+      <path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1s6 1 6 1zM12 8c2-4 6-4 6-1s-6 1-6 1z" />
+    </svg>
+  )
+}
+
+function useModal(onClose: () => void) {
+  const ref = useRef<HTMLDialogElement>(null)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (!el.open) el.showModal()
+    const handle = () => closeRef.current()
+    el.addEventListener('close', handle)
+    return () => el.removeEventListener('close', handle)
+  }, [])
+  return ref
+}
+
+export function Dialog({
+  title,
+  subtitle,
+  onClose,
+  wide = false,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  onClose: () => void
+  wide?: boolean
+  children: React.ReactNode
+}) {
+  const ref = useModal(onClose)
+  return (
+    <dialog
+      ref={ref}
+      className={`m-auto rounded-2xl bg-neutral-50 p-0 text-neutral-900 shadow-2xl dark:bg-neutral-900 dark:text-neutral-100 ${
+        wide ? 'w-[min(760px,calc(100vw-32px))]' : 'w-[min(440px,calc(100vw-32px))]'
+      }`}
+    >
+      <div className="flex flex-col gap-5 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="font-display text-3xl leading-tight">{title}</h3>
+            {subtitle && <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={() => ref.current?.close()}
+            aria-label="Close"
+            className="-mt-1 -mr-2 grid size-10 shrink-0 cursor-pointer place-items-center rounded-full hover:bg-neutral-900/5 dark:hover:bg-neutral-100/10"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <path d="M3 3l10 10M13 3L3 13" />
+            </svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </dialog>
+  )
+}
+
+export function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1.5 text-sm">
+      <span>
+        {label}
+        {hint && <span className="text-neutral-500 dark:text-neutral-400"> · {hint}</span>}
+      </span>
+      {children}
+    </label>
+  )
+}
+
+export function ErrorText({ children }: { children: React.ReactNode }) {
+  if (!children) return null
+  return <p className="text-sm text-red-700 dark:text-red-400">{children}</p>
+}
