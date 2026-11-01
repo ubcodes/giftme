@@ -1,8 +1,11 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
 import appCss from '../styles.css?url'
 import { themeInitScript } from '@/components/theme'
+import { AuthProvider } from '@/components/auth'
+import { getViewerFn } from '@/server/fns/account'
 
 export const Route = createRootRoute({
+  beforeLoad: async () => ({ viewer: await getViewerFn() }),
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -25,7 +28,17 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+  component: RootComponent,
 })
+
+function RootComponent() {
+  const { viewer } = Route.useRouteContext()
+  return (
+    <AuthProvider mode={viewer.mode} publishableKey={viewer.publishableKey}>
+      <Outlet />
+    </AuthProvider>
+  )
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (

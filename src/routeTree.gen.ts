@@ -9,38 +9,233 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as ThankYouRouteImport } from './routes/thank-you'
+import { Route as StartRouteImport } from './routes/start'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as MediaSplatRouteImport } from './routes/media/$'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as DashboardNewRouteImport } from './routes/dashboard/new'
+import { Route as ApiUploadRouteImport } from './routes/api/upload'
+import { Route as WHandleIndexRouteImport } from './routes/w/$handle/index'
+import { Route as WHandleSlugRouteImport } from './routes/w/$handle/$slug'
+import { Route as DashboardWIdRouteImport } from './routes/dashboard/w/$id'
+import { Route as ApiPaystackWebhookRouteImport } from './routes/api/paystack/webhook'
 
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ThankYouRoute = ThankYouRouteImport.update({
+  id: '/thank-you',
+  path: '/thank-you',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StartRoute = StartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const MediaSplatRoute = MediaSplatRouteImport.update({
+  id: '/media/$',
+  path: '/media/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardNewRoute = DashboardNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const ApiUploadRoute = ApiUploadRouteImport.update({
+  id: '/api/upload',
+  path: '/api/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WHandleIndexRoute = WHandleIndexRouteImport.update({
+  id: '/w/$handle/',
+  path: '/w/$handle/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WHandleSlugRoute = WHandleSlugRouteImport.update({
+  id: '/w/$handle/$slug',
+  path: '/w/$handle/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardWIdRoute = DashboardWIdRouteImport.update({
+  id: '/w/$id',
+  path: '/w/$id',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const ApiPaystackWebhookRoute = ApiPaystackWebhookRouteImport.update({
+  id: '/api/paystack/webhook',
+  path: '/api/paystack/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/start': typeof StartRoute
+  '/thank-you': typeof ThankYouRoute
+  '/welcome': typeof WelcomeRoute
+  '/api/upload': typeof ApiUploadRoute
+  '/dashboard/new': typeof DashboardNewRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/media/$': typeof MediaSplatRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/api/paystack/webhook': typeof ApiPaystackWebhookRoute
+  '/dashboard/w/$id': typeof DashboardWIdRoute
+  '/w/$handle/$slug': typeof WHandleSlugRoute
+  '/w/$handle': typeof WHandleIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/start': typeof StartRoute
+  '/thank-you': typeof ThankYouRoute
+  '/welcome': typeof WelcomeRoute
+  '/api/upload': typeof ApiUploadRoute
+  '/dashboard/new': typeof DashboardNewRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/media/$': typeof MediaSplatRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/api/paystack/webhook': typeof ApiPaystackWebhookRoute
+  '/dashboard/w/$id': typeof DashboardWIdRoute
+  '/w/$handle/$slug': typeof WHandleSlugRoute
+  '/w/$handle': typeof WHandleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/start': typeof StartRoute
+  '/thank-you': typeof ThankYouRoute
+  '/welcome': typeof WelcomeRoute
+  '/api/upload': typeof ApiUploadRoute
+  '/dashboard/new': typeof DashboardNewRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/media/$': typeof MediaSplatRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/api/paystack/webhook': typeof ApiPaystackWebhookRoute
+  '/dashboard/w/$id': typeof DashboardWIdRoute
+  '/w/$handle/$slug': typeof WHandleSlugRoute
+  '/w/$handle/': typeof WHandleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/start'
+    | '/thank-you'
+    | '/welcome'
+    | '/api/upload'
+    | '/dashboard/new'
+    | '/dashboard/settings'
+    | '/media/$'
+    | '/dashboard/'
+    | '/api/paystack/webhook'
+    | '/dashboard/w/$id'
+    | '/w/$handle/$slug'
+    | '/w/$handle'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/start'
+    | '/thank-you'
+    | '/welcome'
+    | '/api/upload'
+    | '/dashboard/new'
+    | '/dashboard/settings'
+    | '/media/$'
+    | '/dashboard'
+    | '/api/paystack/webhook'
+    | '/dashboard/w/$id'
+    | '/w/$handle/$slug'
+    | '/w/$handle'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/start'
+    | '/thank-you'
+    | '/welcome'
+    | '/api/upload'
+    | '/dashboard/new'
+    | '/dashboard/settings'
+    | '/media/$'
+    | '/dashboard/'
+    | '/api/paystack/webhook'
+    | '/dashboard/w/$id'
+    | '/w/$handle/$slug'
+    | '/w/$handle/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
+  StartRoute: typeof StartRoute
+  ThankYouRoute: typeof ThankYouRoute
+  WelcomeRoute: typeof WelcomeRoute
+  ApiUploadRoute: typeof ApiUploadRoute
+  MediaSplatRoute: typeof MediaSplatRoute
+  ApiPaystackWebhookRoute: typeof ApiPaystackWebhookRoute
+  WHandleSlugRoute: typeof WHandleSlugRoute
+  WHandleIndexRoute: typeof WHandleIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/thank-you': {
+      id: '/thank-you'
+      path: '/thank-you'
+      fullPath: '/thank-you'
+      preLoaderRoute: typeof ThankYouRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/start': {
+      id: '/start'
+      path: '/start'
+      fullPath: '/start'
+      preLoaderRoute: typeof StartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,21 +243,112 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/media/$': {
+      id: '/media/$'
+      path: '/media/$'
+      fullPath: '/media/$'
+      preLoaderRoute: typeof MediaSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/new': {
+      id: '/dashboard/new'
+      path: '/new'
+      fullPath: '/dashboard/new'
+      preLoaderRoute: typeof DashboardNewRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/api/upload': {
+      id: '/api/upload'
+      path: '/api/upload'
+      fullPath: '/api/upload'
+      preLoaderRoute: typeof ApiUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/w/$handle/': {
+      id: '/w/$handle/'
+      path: '/w/$handle'
+      fullPath: '/w/$handle'
+      preLoaderRoute: typeof WHandleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/w/$handle/$slug': {
+      id: '/w/$handle/$slug'
+      path: '/w/$handle/$slug'
+      fullPath: '/w/$handle/$slug'
+      preLoaderRoute: typeof WHandleSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/w/$id': {
+      id: '/dashboard/w/$id'
+      path: '/w/$id'
+      fullPath: '/dashboard/w/$id'
+      preLoaderRoute: typeof DashboardWIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/api/paystack/webhook': {
+      id: '/api/paystack/webhook'
+      path: '/api/paystack/webhook'
+      fullPath: '/api/paystack/webhook'
+      preLoaderRoute: typeof ApiPaystackWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface DashboardRouteChildren {
+  DashboardNewRoute: typeof DashboardNewRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardWIdRoute: typeof DashboardWIdRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardNewRoute: DashboardNewRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+  DashboardWIdRoute: DashboardWIdRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRouteWithChildren,
+  StartRoute: StartRoute,
+  ThankYouRoute: ThankYouRoute,
+  WelcomeRoute: WelcomeRoute,
+  ApiUploadRoute: ApiUploadRoute,
+  MediaSplatRoute: MediaSplatRoute,
+  ApiPaystackWebhookRoute: ApiPaystackWebhookRoute,
+  WHandleSlugRoute: WHandleSlugRoute,
+  WHandleIndexRoute: WHandleIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
