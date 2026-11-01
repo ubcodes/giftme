@@ -194,14 +194,14 @@ function ItemCard({
       <div className="relative flex flex-col gap-2.5 px-3.5 pb-3.5 sm:px-4 sm:pb-4">
         {item.state === 'open' && (
           <>
-            {item.percent !== null && (
+            {item.percent !== null && item.canContribute && (
               <div className="flex items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
                 <Bar percent={item.percent} />
                 <span className="w-10 text-right">{item.percent}%</span>
               </div>
             )}
             <div className="flex gap-2.5">
-              {acceptsMoney && (
+              {acceptsMoney && item.canContribute && (
                 <button type="button" onClick={onContribute} className={`min-h-10 flex-1 px-3 text-sm ${primaryButton}`}>
                   Contribute
                 </button>

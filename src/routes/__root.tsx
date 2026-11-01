@@ -2,6 +2,7 @@ import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-r
 import appCss from '../styles.css?url'
 import { themeInitScript } from '@/components/theme'
 import { AuthProvider } from '@/components/auth'
+import { LiquidGlass } from '@/components/liquid'
 import { getViewerFn } from '@/server/fns/account'
 
 export const Route = createRootRoute({
@@ -35,6 +36,7 @@ function RootComponent() {
   const { viewer } = Route.useRouteContext()
   return (
     <AuthProvider mode={viewer?.mode ?? 'off'} publishableKey={viewer?.publishableKey ?? null}>
+      <LiquidGlass />
       <Outlet />
     </AuthProvider>
   )

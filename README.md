@@ -164,3 +164,11 @@ Blnk ledger "GiftMe"
 ```bash
 npm run typecheck
 ```
+
+## Image credits
+
+Landing-page demo photos in `public/images/demo` come from Wikimedia Commons and are public
+domain or CC0: "Christian wedding - Couples dancing - Northern Nigeria", "Zanzibar Beach",
+"Chemex (Unsplash)", "Kitchen aid mixer", "Headphones on white background", "Appareil photo
+instantané Polaroid Spirit 600", "Rick Owens Geobasket sneaker".
+

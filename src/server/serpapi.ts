@@ -37,6 +37,7 @@ export type ShoppingResult = {
   extracted_price?: number
   thumbnail?: string
   serpapi_thumbnail?: string
+  immersive_product_page_token?: string
 }
 
 /** Google Shopping. It doesn't cover Nigeria, so this is used for international shops. */
@@ -67,4 +68,13 @@ export async function amazonProduct(asin: string, domain: string) {
     product_results?: { title?: string; price?: string; extracted_price?: number; thumbnail?: string; thumbnails?: string[] }
   }>({ engine: 'amazon_product', asin, amazon_domain: domain })
   return json.product_results ?? null
+}
+
+/** The shops selling a Google Shopping product, with their own links. */
+export async function immersiveProduct(pageToken: string) {
+  const json = await serpApi<{ product_results?: { stores?: { name?: string; link?: string; price?: string }[] } }>({
+    engine: 'google_immersive_product',
+    page_token: pageToken,
+  })
+  return json.product_results?.stores ?? []
 }

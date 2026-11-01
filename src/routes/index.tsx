@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
+import { FollowCursor } from '@/components/liquid'
 import { ThemeToggle } from '@/components/theme'
-import { Bar, GiftIcon, Logo, glassCard } from '@/components/ui'
+import { Bar, Logo, glassCard } from '@/components/ui'
 import { OCCASIONS } from '@/lib/occasions'
 import { REPO_URL } from '@/lib/site'
 import { primaryButton, secondaryButton } from '@/lib/ui'
@@ -19,6 +20,7 @@ function Landing() {
   return (
     <div className="relative min-h-screen overflow-x-clip">
       <Aurora />
+      <FollowCursor />
       <Nav signedIn={signedIn} />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <Hero />
@@ -122,7 +124,7 @@ function Nav({ signedIn }: { signedIn: boolean }) {
   return (
     <nav
       className={`sticky top-0 z-30 transition-all duration-300 ${
-        scrolled ? 'border-b border-white/40 bg-white/60 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/60' : 'border-b border-transparent'
+        scrolled ? 'border-b border-white/40 bg-white/40 shadow-[inset_0_-1px_0_rgb(255_255_255/0.5)] backdrop-blur-2xl backdrop-saturate-200 dark:border-white/5 dark:bg-neutral-950/40' : 'border-b border-transparent'
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
@@ -171,8 +173,8 @@ function Hero() {
           straight to your bank.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <a href={START_HREF} className={`glow-ring inline-flex min-h-12 items-center rounded-full bg-neutral-50 dark:bg-neutral-950`}>
-            <span className={`inline-flex min-h-12 items-center px-6 text-[15px] ${primaryButton}`}>Start your wishlist, it's free</span>
+          <a href={START_HREF} data-cursor="Let's go ✨" className={`inline-flex min-h-12 items-center px-6 text-[15px] ${primaryButton}`}>
+            Start your wishlist, it's free
           </a>
           <a href="#how" className={`inline-flex min-h-12 items-center px-5 text-[15px] ${secondaryButton}`}>
             See how it works
@@ -190,41 +192,79 @@ function Hero() {
 }
 
 const DEMO_ITEMS = [
-  { title: 'Ceramic pour-over set', price: 38000, start: 54, img: 'from-amber-200/80 to-rose-200/70' },
-  { title: 'Honeymoon in Zanzibar', price: 1200000, start: 31, img: 'from-sky-200/80 to-teal-200/70' },
-  { title: 'Linen bedding, queen', price: 95000, start: 88, img: 'from-violet-200/80 to-pink-200/70' },
+  { title: 'Ceramic pour-over set', price: 38000, start: 54, img: '/images/demo/pour-over.jpg', tint: 'from-amber-200/80 to-rose-200/70' },
+  { title: 'Honeymoon in Zanzibar', price: 1200000, start: 31, img: '/images/demo/beach.jpg', tint: 'from-sky-200/80 to-teal-200/70' },
+  { title: 'Stand mixer', price: 285000, start: 78, img: '/images/demo/mixer.jpg', tint: 'from-violet-200/80 to-pink-200/70' },
 ]
 
-const DEMO_EVENTS = [
-  { who: 'Chioma', what: 'gave ₦20,000', item: 0, bump: 18 },
-  { who: 'Tunde', what: 'gave ₦150,000', item: 1, bump: 12 },
-  { who: 'Ife', what: 'gave ₦12,000', item: 2, bump: 12 },
-  { who: 'Kemi', what: 'gave ₦5,000', item: 0, bump: 10 },
-]
+const GHOSTS = ['Chioma', 'Tunde', 'Ife', 'Kemi', 'Bayo']
+const GIFT_STEPS = [5000, 10000, 20000]
 
-/** A live-looking wishlist: gifts arrive, bars fill, and the card tilts with the pointer. */
+type Toast = { id: number; text: string; you: boolean }
+
+/**
+ * A live, clickable wishlist. Visitors can tap "Give" on any gift; when they're not
+ * playing with it, a friend's cursor drifts over and gives on its own. Gifts that reach
+ * 100% burst into confetti and then reset so the demo keeps going.
+ */
 function HeroPreview() {
   const [progress, setProgress] = useState(DEMO_ITEMS.map(() => 0))
-  const [event, setEvent] = useState(-1)
+  const [toast, setToast] = useState<Toast | null>(null)
+  const [bumped, setBumped] = useState<number | null>(null)
+  const [burst, setBurst] = useState<{ id: number; item: number } | null>(null)
+  const [ghost, setGhost] = useState({ x: 260, y: 40, name: GHOSTS[0], clicking: 0 })
   const card = useRef<HTMLDivElement>(null)
+  const buttons = useRef<(HTMLButtonElement | null)[]>([])
+  const hovering = useRef(false)
+  const counter = useRef(0)
+
+  function give(i: number, who: string, you: boolean) {
+    const amount = GIFT_STEPS[counter.current % GIFT_STEPS.length]
+    counter.current++
+    setBumped(i)
+    setTimeout(() => setBumped(null), 450)
+    setToast({ id: counter.current, text: `${you ? 'You' : who} gave ${naira(amount)}`, you })
+    setProgress((p) => {
+      const next = [...p]
+      next[i] = Math.min(100, next[i] + (you ? 14 : 9))
+      if (next[i] >= 100 && p[i] < 100) {
+        setBurst({ id: counter.current, item: i })
+        setTimeout(() => setProgress((q) => q.map((v, k) => (k === i ? DEMO_ITEMS[i].start : v))), 3800)
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     const start = setTimeout(() => setProgress(DEMO_ITEMS.map((d) => d.start)), 300)
     let n = 0
-    const tick = setInterval(() => {
-      const e = DEMO_EVENTS[n % DEMO_EVENTS.length]
-      setEvent(n)
-      setProgress((p) => {
-        const next = [...p]
-        // Loop back down once the demo has filled up, so it keeps moving.
-        next[e.item] = next[e.item] >= 100 ? DEMO_ITEMS[e.item].start : Math.min(100, next[e.item] + e.bump)
-        return next
-      })
-      n++
-    }, 3200)
+    let timer: ReturnType<typeof setTimeout>
+    // The friend's cursor: glide to a gift's button, click, wait, repeat.
+    const step = () => {
+      const i = n % DEMO_ITEMS.length
+      const name = GHOSTS[n % GHOSTS.length]
+      const btn = buttons.current[i]
+      const box = card.current
+      if (btn && box && !hovering.current) {
+        const b = btn.getBoundingClientRect()
+        const c = box.getBoundingClientRect()
+        setGhost((g) => ({ ...g, name, x: b.left - c.left + b.width / 2, y: b.top - c.top + b.height / 2 }))
+        timer = setTimeout(() => {
+          if (!hovering.current) {
+            setGhost((g) => ({ ...g, clicking: g.clicking + 1 }))
+            give(i, name, false)
+          }
+          n++
+          timer = setTimeout(step, 2200)
+        }, 1200)
+      } else {
+        timer = setTimeout(step, 1500)
+      }
+    }
+    timer = setTimeout(step, 1600)
     return () => {
       clearTimeout(start)
-      clearInterval(tick)
+      clearTimeout(timer)
     }
   }, [])
 
@@ -234,36 +274,43 @@ function HeroPreview() {
     const r = el.getBoundingClientRect()
     const x = (e.clientX - r.left) / r.width - 0.5
     const y = (e.clientY - r.top) / r.height - 0.5
-    el.style.transform = `perspective(900px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`
+    el.style.transform = `perspective(900px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg)`
   }
 
-  const current = event >= 0 ? DEMO_EVENTS[event % DEMO_EVENTS.length] : null
-
   return (
-    <div className="rise relative mx-auto w-full max-w-md [animation-delay:150ms] lg:max-w-none" onPointerMove={tilt} onPointerLeave={() => card.current && (card.current.style.transform = '')}>
-      <div ref={card} className={`relative rounded-3xl p-5 transition-transform duration-300 ease-out sm:p-6 ${glassCard}`}>
+    <div
+      className="rise relative mx-auto w-full max-w-md [animation-delay:150ms] lg:max-w-none"
+      onPointerEnter={() => (hovering.current = true)}
+      onPointerMove={tilt}
+      onPointerLeave={() => {
+        hovering.current = false
+        if (card.current) card.current.style.transform = ''
+      }}
+    >
+      <div ref={card} className="liquid relative rounded-3xl p-5 transition-transform duration-300 ease-out sm:p-6">
         <div className="flex items-center gap-3">
           <div className="relative size-11 shrink-0">
             <div className="absolute inset-0 animate-[spin-slow_8s_linear_infinite] rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 opacity-80 blur-sm" />
-            <div className="font-display relative grid size-full place-items-center rounded-full bg-neutral-100 text-neutral-600 ring-2 ring-white/70 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-900/70">
-              AT
-            </div>
+            <img src="/images/demo/couple.jpg" alt="" className="relative size-full rounded-full object-cover ring-2 ring-white/70 dark:ring-neutral-900/70" />
           </div>
           <div className="min-w-0">
             <p className="font-display text-xl leading-tight">Ada & Tobi's wedding</p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">12 December · 41 days to go</p>
           </div>
+          <span className="ml-auto hidden rounded-full bg-white/50 px-2.5 py-1 text-[11px] text-neutral-600 sm:inline dark:bg-white/10 dark:text-neutral-300">
+            Try it: tap Give
+          </span>
         </div>
         <div className="mt-5 flex flex-col gap-3">
           {DEMO_ITEMS.map((d, i) => (
             <div
               key={d.title}
-              className={`flex items-center gap-3.5 rounded-2xl border bg-white/50 p-3 transition-colors duration-500 dark:bg-neutral-900/40 ${
-                current?.item === i ? 'border-purple-300/80 dark:border-purple-500/40' : 'border-neutral-200/60 dark:border-neutral-800'
+              className={`relative flex items-center gap-3.5 rounded-2xl border bg-white/55 p-3 transition-colors duration-500 dark:bg-neutral-900/45 ${
+                bumped === i ? 'bump border-purple-300/80 dark:border-purple-500/40' : 'border-white/60 dark:border-white/5'
               }`}
             >
-              <div className={`grid size-14 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-neutral-500/60 ${d.img} dark:opacity-60`}>
-                <GiftIcon size={20} />
+              <div className={`size-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br ${d.tint}`}>
+                <img src={d.img} alt="" className="size-full object-cover" />
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <div className="flex items-baseline justify-between gap-2">
@@ -279,21 +326,72 @@ function HeroPreview() {
                   </div>
                 )}
               </div>
+              <button
+                ref={(el) => {
+                  buttons.current[i] = el
+                }}
+                type="button"
+                data-cursor="Give 🎁"
+                disabled={progress[i] >= 100}
+                onClick={() => give(i, 'You', true)}
+                className="liquid liquid-tint liquid-press shrink-0 cursor-pointer rounded-full px-3 py-1.5 text-xs disabled:opacity-40"
+              >
+                Give
+              </button>
+              {burst?.item === i && <Confetti key={burst.id} />}
             </div>
           ))}
         </div>
+
+        {/* The friend's cursor */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-0 left-0 z-20 transition-transform duration-[1100ms] ease-[cubic-bezier(0.45,0,0.2,1)]"
+          style={{ transform: `translate(${ghost.x}px, ${ghost.y}px)` }}
+        >
+          <span key={ghost.clicking} className={ghost.clicking ? 'click-pulse absolute -top-3 -left-3 size-6 rounded-full bg-pink-400/50' : ''} />
+          <svg width="20" height="20" viewBox="0 0 24 24" className="drop-shadow-md">
+            <path d="M4 3l7 17 2.5-7.5L21 10z" fill="#ec4899" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+          </svg>
+          <span className="absolute top-4 left-4 rounded-full rounded-tl-sm bg-pink-500 px-2 py-0.5 text-[11px] whitespace-nowrap text-white shadow">
+            {ghost.name}
+          </span>
+        </div>
       </div>
-      {current && (
-        <div key={event} className={`toast absolute -bottom-10 -left-3 rounded-2xl px-4 py-3 sm:-left-8 ${glassCard} bg-white/80 dark:bg-neutral-900/80`}>
-          <p className="font-editorial text-2xl leading-none">
-            {current.who} {current.what}
-          </p>
-          <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">only the couple sees names</p>
+
+      {toast && (
+        <div key={toast.id} className="toast liquid absolute -bottom-10 -left-3 rounded-2xl px-4 py-3 sm:-left-8">
+          <p className="font-editorial text-2xl leading-none">{toast.text}</p>
+          <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{toast.you ? 'just like that, no account needed' : 'only the couple sees names'}</p>
         </div>
       )}
-      <div className={`float absolute -top-5 -right-2 hidden rounded-full px-3 py-1.5 text-xs sm:block ${glassCard} bg-white/80 dark:bg-neutral-900/80`}>
-        🎁 3 gifts reserved
-      </div>
+      <div className="float liquid absolute -top-5 -right-2 hidden rounded-full px-3 py-1.5 text-xs sm:block">🎁 3 gifts reserved</div>
+    </div>
+  )
+}
+
+function Confetti() {
+  const colors = ['#a855f7', '#ec4899', '#3b82f6', '#f59e0b', '#10b981']
+  const bits = Array.from({ length: 26 }, (_, i) => {
+    const angle = (i / 26) * Math.PI * 2
+    const dist = 60 + ((i * 37) % 70)
+    return {
+      dx: `${Math.cos(angle) * dist}px`,
+      dy: `${Math.sin(angle) * dist - 30}px`,
+      r: `${(i * 67) % 360}deg`,
+      color: colors[i % colors.length],
+      round: i % 3 === 0,
+    }
+  })
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute top-1/2 right-10 z-10">
+      {bits.map((b, i) => (
+        <span
+          key={i}
+          className={`confetti-bit absolute block ${b.round ? 'size-1.5 rounded-full' : 'h-2.5 w-1 rounded-sm'}`}
+          style={{ background: b.color, '--dx': b.dx, '--dy': b.dy, '--r': b.r } as React.CSSProperties}
+        />
+      ))}
     </div>
   )
 }
@@ -317,14 +415,21 @@ function Ticker() {
   )
 }
 
-const DEMO_URL = 'jumia.com.ng/5-drum-junior-jazz-kit.html'
+const LINK_EXAMPLES = [
+  { url: 'jumia.com.ng/wireless-over-ear-headphones.html', title: 'Over-ear headphones', price: 45500, shop: 'Jumia', img: '/images/demo/headphones.jpg' },
+  { url: 'amazon.com/dp/B0CX23V2ZK', title: 'Instant film camera', price: 119985, shop: 'Amazon', img: '/images/demo/camera.jpg' },
+  { url: 'temu.com/high-top-sneakers-g-6010.html', title: 'High-top leather sneakers', price: 52500, shop: 'Temu', img: '/images/demo/sneakers.jpg' },
+  { url: 'shop.ng/products/glass-pour-over-coffee-maker', title: 'Glass pour-over coffee maker', price: 38000, shop: 'a small shop', img: '/images/demo/pour-over.jpg' },
+]
 
-/** Types a shop link, then shows the card GiftMe fills in from it. */
+/** Types a shop link, then shows the card GiftMe fills in from it, for a few real examples. */
 function MagicLink() {
+  const [example, setExample] = useState(0)
   const [typed, setTyped] = useState(0)
   const [phase, setPhase] = useState<'typing' | 'reading' | 'done'>('typing')
   const box = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
+  const ex = LINK_EXAMPLES[example]
 
   useEffect(() => {
     const el = box.current
@@ -338,17 +443,18 @@ function MagicLink() {
     if (!visible) return
     let t: ReturnType<typeof setTimeout>
     if (phase === 'typing') {
-      t = typed < DEMO_URL.length ? setTimeout(() => setTyped((n) => n + 1), 45) : setTimeout(() => setPhase('reading'), 400)
+      t = typed < ex.url.length ? setTimeout(() => setTyped((n) => n + 1), 40) : setTimeout(() => setPhase('reading'), 350)
     } else if (phase === 'reading') {
-      t = setTimeout(() => setPhase('done'), 1100)
+      t = setTimeout(() => setPhase('done'), 1000)
     } else {
       t = setTimeout(() => {
+        setExample((e) => (e + 1) % LINK_EXAMPLES.length)
         setTyped(0)
         setPhase('typing')
-      }, 4200)
+      }, 3400)
     }
     return () => clearTimeout(t)
-  }, [visible, phase, typed])
+  }, [visible, phase, typed, ex.url.length])
 
   return (
     <section className="grid grid-cols-1 items-center gap-12 py-24 lg:grid-cols-2">
@@ -360,21 +466,39 @@ function MagicLink() {
             and price. Or just type “drum set” and pick from shops that sell it, in Nigeria and abroad.
           </p>
         </Reveal>
+        <Reveal delay={150}>
+          <div className="flex flex-wrap gap-2">
+            {LINK_EXAMPLES.map((e, i) => (
+              <button
+                key={e.shop}
+                type="button"
+                onClick={() => {
+                  setExample(i)
+                  setTyped(0)
+                  setPhase('typing')
+                }}
+                className={`liquid liquid-press cursor-pointer rounded-full px-3.5 py-1.5 text-sm ${i === example ? 'liquid-tint' : ''}`}
+              >
+                {e.shop === 'a small shop' ? 'Any shop' : e.shop}
+              </button>
+            ))}
+          </div>
+        </Reveal>
       </div>
       <Reveal delay={150}>
-        <div ref={box} className={`rounded-3xl p-5 sm:p-6 ${glassCard}`}>
-          <div className="flex items-center gap-2 rounded-xl border border-neutral-300/70 bg-white/70 px-3.5 py-3 text-sm dark:border-neutral-700/70 dark:bg-neutral-900/60">
+        <div ref={box} className="liquid rounded-3xl p-5 sm:p-6">
+          <div className="flex items-center gap-2 rounded-xl border border-white/60 bg-white/70 px-3.5 py-3 text-sm dark:border-white/10 dark:bg-neutral-900/60">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 text-neutral-400" aria-hidden="true">
               <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
             </svg>
             <span className="truncate text-neutral-700 dark:text-neutral-300">
-              {DEMO_URL.slice(0, typed)}
+              {ex.url.slice(0, typed)}
               {phase === 'typing' && <span className="caret ml-px inline-block h-4 w-px translate-y-0.5 bg-purple-500" />}
             </span>
           </div>
           <div className="mt-4 min-h-[124px]">
             {phase === 'reading' && (
-              <div className="flex animate-pulse items-center gap-4 rounded-2xl border border-neutral-200/70 p-3 dark:border-neutral-800">
+              <div className="flex animate-pulse items-center gap-4 rounded-2xl border border-white/60 p-3 dark:border-white/10">
                 <div className="size-24 rounded-xl bg-neutral-200/80 dark:bg-neutral-800" />
                 <div className="flex flex-1 flex-col gap-2">
                   <div className="h-3.5 w-4/5 rounded bg-neutral-200/80 dark:bg-neutral-800" />
@@ -383,11 +507,13 @@ function MagicLink() {
               </div>
             )}
             {phase === 'done' && (
-              <div className="rise flex items-center gap-4 rounded-2xl border border-purple-300/60 bg-white/60 p-3 dark:border-purple-500/30 dark:bg-neutral-900/50">
-                <div className="grid size-24 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sky-200 to-indigo-200 text-3xl dark:from-sky-500/20 dark:to-indigo-500/20">🥁</div>
+              <div key={example} className="rise flex items-center gap-4 rounded-2xl border border-purple-300/60 bg-white/60 p-3 dark:border-purple-500/30 dark:bg-neutral-900/50">
+                <img src={ex.img} alt="" className="size-24 shrink-0 rounded-xl object-cover" />
                 <div className="flex min-w-0 flex-col gap-1">
-                  <span className="font-display text-xl leading-tight">5-Drum Junior Jazz Drum Kit</span>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{naira(37360)} · from Jumia</span>
+                  <span className="font-display text-xl leading-tight">{ex.title}</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {naira(ex.price)} · from {ex.shop}
+                  </span>
                   <span className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">✓ Name, photo and price filled in</span>
                 </div>
               </div>
@@ -603,8 +729,8 @@ function FinalCta() {
           Your next <span className="font-editorial text-6xl sm:text-7xl">celebration</span> starts here
         </h2>
         <p className="max-w-md text-[15px] text-neutral-600 dark:text-neutral-400">Sign in with Google or your email. No passwords, no forms to fight with.</p>
-        <a href={START_HREF} className="glow-ring inline-flex min-h-12 items-center rounded-full bg-neutral-50 dark:bg-neutral-950">
-          <span className={`inline-flex min-h-12 items-center px-7 text-[15px] ${primaryButton}`}>Create my wishlist</span>
+        <a href={START_HREF} data-cursor="Let's go ✨" className={`inline-flex min-h-12 items-center px-7 text-[15px] ${primaryButton}`}>
+          Create my wishlist
         </a>
       </Reveal>
     </section>

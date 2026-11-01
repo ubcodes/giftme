@@ -15,7 +15,7 @@ import {
   siteUrl,
 } from '../gifts'
 import { previewLink, usdRate } from '../products'
-import { searchProvider } from '../search'
+import { resolveShopLink, searchProvider } from '../search'
 import { requireOwner, toProfile } from '../users'
 import {
   addItem,
@@ -51,6 +51,7 @@ const itemInput = z.object({
   link: z.url().max(2000).nullable(),
   note: z.string().trim().max(500).nullable(),
   allowReserve: z.boolean(),
+  allowMoney: z.boolean(),
 })
 
 export const getDashboardFn = createServerFn({ method: 'GET' }).handler(async () => {
@@ -146,6 +147,15 @@ export const searchProductsFn = createServerFn({ method: 'POST' })
       await requireOwner()
       const provider = searchProvider()
       return { results: provider ? await provider.search(data.query) : [] }
+    }),
+  )
+
+export const resolveShopLinkFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ token: z.string().min(1).max(2000), source: z.string().max(200).nullable() }))
+  .handler(({ data }) =>
+    attempt(async () => {
+      await requireOwner()
+      return { link: await resolveShopLink(data.token, data.source).catch(() => null) }
     }),
   )
 

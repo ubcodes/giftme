@@ -55,6 +55,7 @@ export function initDb() {
           link TEXT,
           note TEXT,
           allow_reserve INTEGER NOT NULL DEFAULT 1,
+          money_enabled INTEGER NOT NULL DEFAULT 1,
           hidden INTEGER NOT NULL DEFAULT 0,
           received INTEGER NOT NULL DEFAULT 0,
           position INTEGER NOT NULL DEFAULT 0,
@@ -92,12 +93,26 @@ export function initDb() {
       ],
       'write',
     )
-    .then(() => undefined)
+    .then(() => migrate())
     .catch((err) => {
       ready = null
       throw err
     })
   return ready
+}
+
+// Columns added after the first release. SQLite has no ADD COLUMN IF NOT EXISTS, so ignore
+// the "duplicate column" error on databases that already have them.
+const MIGRATIONS = [`ALTER TABLE items ADD COLUMN money_enabled INTEGER NOT NULL DEFAULT 1`]
+
+async function migrate() {
+  for (const sql of MIGRATIONS) {
+    try {
+      await db.execute(sql)
+    } catch (err) {
+      if (!/duplicate column/i.test(String(err))) throw err
+    }
+  }
 }
 
 export async function query<T = Record<string, unknown>>(sql: string, args: InValue[] = []) {

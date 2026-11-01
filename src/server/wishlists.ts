@@ -35,6 +35,7 @@ export type ItemRow = {
   link: string | null
   note: string | null
   allow_reserve: number
+  money_enabled: number
   hidden: number
   received: number
   position: number
@@ -50,6 +51,7 @@ export type ItemProgress = {
   remainingNgn: number | null
   state: ItemState
   canReserve: boolean
+  canContribute: boolean
   reserved: boolean
 }
 
@@ -215,6 +217,7 @@ export async function progressFor(item: ItemRow, reserved: Set<string>): Promise
     state: funded || (item.received && item.kind === 'gift') ? 'funded' : isReserved ? 'reserved' : 'open',
     // Reserving means a guest buys the thing themselves, so only gifts, and only before any money is in.
     canReserve: item.kind === 'gift' && !!item.allow_reserve && s.raisedKobo === 0 && !isReserved,
+    canContribute: item.kind === 'fund' || !!item.money_enabled,
     reserved: isReserved,
   }
 }
@@ -230,6 +233,7 @@ export type ItemInput = {
   link: string | null
   note: string | null
   allowReserve: boolean
+  allowMoney: boolean
 }
 
 export async function ownedItem(ownerId: string, itemId: string) {
@@ -244,6 +248,9 @@ export async function ownedItem(ownerId: string, itemId: string) {
 
 function validateItem(input: ItemInput) {
   if (input.kind === 'gift' && (!input.priceNgn || input.priceNgn < 100)) throw new UserError('Add a price of at least ₦100.')
+  if (input.kind === 'gift' && !input.allowMoney && !input.allowReserve) {
+    throw new UserError('Let guests chip in, buy it themselves, or both.')
+  }
   if (input.priceNgn !== null && input.priceNgn > 100_000_000) throw new UserError('That price looks too high.')
 }
 
@@ -269,8 +276,8 @@ export async function addItem(ownerId: string, wishlistId: string, raw: ItemInpu
   const last = await one<{ p: number | null }>('SELECT MAX(position) AS p FROM items WHERE wishlist_id = ?', [wishlistId])
   await run(
     `INSERT INTO items (id, wishlist_id, kind, title, price_ngn, price_usd, image_url, source_image_url, link, note,
-                        allow_reserve, position, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        allow_reserve, money_enabled, position, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       wishlistId,
@@ -283,6 +290,7 @@ export async function addItem(ownerId: string, wishlistId: string, raw: ItemInpu
       input.link,
       input.note,
       input.kind === 'gift' && input.allowReserve ? 1 : 0,
+      input.kind === 'fund' || input.allowMoney ? 1 : 0,
       Number(last?.p ?? -1) + 1,
       Date.now(),
     ],
@@ -302,7 +310,7 @@ export async function updateItem(ownerId: string, itemId: string, raw: ItemInput
   const input = await storeInlineImage(raw)
   const imageChanged = input.imageUrl !== item.image_url
   await run(
-    `UPDATE items SET kind = ?, title = ?, price_ngn = ?, price_usd = ?, link = ?, note = ?, allow_reserve = ?,
+    `UPDATE items SET kind = ?, title = ?, price_ngn = ?, price_usd = ?, link = ?, note = ?, allow_reserve = ?, money_enabled = ?,
        image_url = ?, source_image_url = CASE WHEN ? THEN ? ELSE source_image_url END
      WHERE id = ?`,
     [
@@ -313,6 +321,7 @@ export async function updateItem(ownerId: string, itemId: string, raw: ItemInput
       input.link,
       input.note,
       input.kind === 'gift' && input.allowReserve ? 1 : 0,
+      input.kind === 'fund' || input.allowMoney ? 1 : 0,
       input.imageUrl,
       imageChanged ? 1 : 0,
       input.imageUrl,

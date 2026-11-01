@@ -1,7 +1,7 @@
 import { UserError } from './errors'
 import { USER_AGENT } from './net'
 import { parsePriceText, readProductPage, toNaira } from './products'
-import { serpApiEnabled, shoppingSearch, webSearch, type OrganicResult } from './serpapi'
+import { immersiveProduct, serpApiEnabled, shoppingSearch, webSearch, type OrganicResult } from './serpapi'
 
 // Product search sits behind this interface so the provider can change (SerpApi today;
 // a shop's affiliate API or another search API later) without touching the UI.
@@ -16,6 +16,8 @@ export type ProductResult = {
   link: string | null
   source: string | null
   region: 'ng' | 'intl'
+  /** Set when `link` is missing: exchange it for the shop's own link with resolveShopLink. */
+  resolveToken?: string
 }
 
 export interface ProductSearchProvider {
@@ -27,7 +29,7 @@ export interface ProductSearchProvider {
 const NOT_SHOPS = /(^|\.)(google\.|facebook\.com|instagram\.com|youtube\.com|tiktok\.com|wikipedia\.org|nairaland\.com|reddit\.com|pinterest\.)/i
 
 /** Google wraps shop links in a click-through redirect; read where it points (one request, no body). */
-async function unwrapGoogleLink(link: string) {
+export async function unwrapGoogleLink(link: string) {
   const url = new URL(link)
   if (!/(^|\.)google\.com$/.test(url.hostname) || !['/goto', '/url'].includes(url.pathname)) return link
   try {
@@ -95,7 +97,9 @@ class SerpApiProducts implements ProductSearchProvider {
         priceNgn,
         priceUsd,
         priceText: r.price ?? null,
-        link: r.link ?? r.product_link ?? null,
+        // Google's product pages need a consent screen, so only keep a direct shop link here.
+        link: r.link && !/google\./.test(new URL(r.link).hostname) ? r.link : null,
+        resolveToken: r.immersive_product_page_token,
         source: r.source ?? null,
         region: 'intl' as const,
       }
@@ -110,6 +114,15 @@ class SerpApiProducts implements ProductSearchProvider {
     }
     return [...(ng.status === 'fulfilled' ? ng.value : []), ...(intl.status === 'fulfilled' ? intl.value : [])]
   }
+}
+
+/** Finds the shop's own link for an international result, preferring the shop that was shown. */
+export async function resolveShopLink(token: string, source: string | null) {
+  const stores = (await immersiveProduct(token)).filter((s) => s.link)
+  const store = stores.find((s) => source && s.name?.toLowerCase().includes(source.toLowerCase())) ?? stores[0]
+  if (!store?.link) return null
+  const link = await unwrapGoogleLink(new URL(store.link, 'https://www.google.com').toString())
+  return link && !/(^|\.)google\./.test(new URL(link).hostname) ? link : null
 }
 
 export function searchProvider(): ProductSearchProvider | null {

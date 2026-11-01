@@ -26,7 +26,7 @@ export function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
-      className="grid size-10 cursor-pointer place-items-center rounded-full border border-white/40 bg-white/50 text-neutral-600 shadow-sm backdrop-blur-xl transition-colors hover:bg-white/80 dark:border-white/10 dark:bg-neutral-900/40 dark:text-neutral-400 dark:hover:bg-neutral-800/70"
+      className="liquid liquid-press grid size-10 cursor-pointer place-items-center rounded-full text-neutral-600 dark:text-neutral-300"
     >
       {dark ? (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">

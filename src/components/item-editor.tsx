@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { addItemFn, previewLinkFn, searchProductsFn, updateItemFn } from '@/server/fns/owner'
+import { addItemFn, previewLinkFn, resolveShopLinkFn, searchProductsFn, updateItemFn } from '@/server/fns/owner'
 import type { ProductResult } from '@/server/search'
 import { naira } from '@/lib/format'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/ui'
@@ -15,6 +15,7 @@ export type ItemValues = {
   link: string | null
   note: string | null
   allowReserve: boolean
+  allowMoney: boolean
 }
 
 const EMPTY_GIFT: ItemValues = {
@@ -26,9 +27,18 @@ const EMPTY_GIFT: ItemValues = {
   link: null,
   note: null,
   allowReserve: true,
+  allowMoney: true,
 }
 
 type Tab = 'find' | 'manual'
+
+type GiveMode = 'money' | 'buy' | 'both'
+
+const GIVE_MODES: { id: GiveMode; label: string; hint: string }[] = [
+  { id: 'both', label: 'Both', hint: 'Chip in money, or buy it' },
+  { id: 'money', label: 'Chip in money', hint: 'Friends send any amount' },
+  { id: 'buy', label: 'Buy it themselves', hint: 'One guest reserves and buys' },
+]
 
 function looksLikeLink(text: string) {
   const t = text.trim()
@@ -239,6 +249,7 @@ function ResultGroup({
   results: ProductResult[]
   onPick: (draft: ItemValues, notice: string | null) => void
 }) {
+  const [busy, setBusy] = useState<string | null>(null)
   return (
     <section className="flex flex-col gap-2.5">
       <p className="text-xs tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
@@ -250,16 +261,25 @@ function ResultGroup({
           <button
             key={r.id}
             type="button"
-            onClick={() =>
+            disabled={!!busy}
+            onClick={async () => {
+              let link = r.link
+              if (!link && r.resolveToken) {
+                setBusy(r.id)
+                const res = await resolveShopLinkFn({ data: { token: r.resolveToken, source: r.source } }).catch(() => null)
+                setBusy(null)
+                link = res?.ok ? res.link : null
+              }
               onPick(
-                { ...EMPTY_GIFT, title: r.title, priceNgn: r.priceNgn, priceUsd: r.priceUsd, imageUrl: r.imageUrl, link: r.link },
+                { ...EMPTY_GIFT, title: r.title, priceNgn: r.priceNgn, priceUsd: r.priceUsd, imageUrl: r.imageUrl, link },
                 r.source ? `From ${r.source}. Change anything you like, then save.` : null,
               )
-            }
+            }}
             className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-neutral-200/80 bg-white/60 text-left transition-all hover:-translate-y-0.5 hover:border-purple-400/70 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900/50"
           >
-            <div className="aspect-square w-full bg-white p-2">
+            <div className="relative aspect-square w-full bg-white p-2">
               {r.imageUrl ? <img src={r.imageUrl} alt="" className="size-full object-contain" loading="lazy" /> : null}
+              {busy === r.id && <span className="absolute inset-0 grid place-items-center bg-white/70 text-xs text-neutral-600">Finding the shop…</span>}
             </div>
             <div className="flex flex-col gap-0.5 p-2.5">
               <span className="line-clamp-2 text-sm leading-snug">{r.title}</span>
@@ -355,7 +375,7 @@ function ItemForm({
   const [image, setImage] = useState(initial.imageUrl)
   const [link, setLink] = useState(initial.link ?? '')
   const [note, setNote] = useState(initial.note ?? '')
-  const [allowReserve, setAllowReserve] = useState(initial.allowReserve)
+  const [mode, setMode] = useState<GiveMode>(initial.allowMoney && initial.allowReserve ? 'both' : initial.allowReserve ? 'buy' : 'money')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -379,7 +399,8 @@ function ItemForm({
       imageUrl: image,
       link: cleanLink,
       note: note.trim() || null,
-      allowReserve: !fund && allowReserve,
+      allowReserve: !fund && mode !== 'money',
+      allowMoney: fund || mode !== 'buy',
     })
     setBusy(false)
     if (err) setError(err)
@@ -435,13 +456,27 @@ function ItemForm({
           <textarea className={inputClass} rows={2} value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
         </Field>
         {!fund && (
-          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-neutral-300/70 px-4 py-3 text-sm dark:border-neutral-700/70">
-            <span>
-              Guests can reserve it to buy
-              <span className="block text-xs text-neutral-500 dark:text-neutral-400">They buy it themselves; others see it as taken.</span>
-            </span>
-            <Switch checked={allowReserve} onChange={setAllowReserve} />
-          </label>
+          <fieldset className="flex flex-col gap-2 text-sm">
+            <legend className="mb-2">How can guests give this?</legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {GIVE_MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  aria-pressed={mode === m.id}
+                  onClick={() => setMode(m.id)}
+                  className={`flex cursor-pointer flex-col gap-0.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                    mode === m.id
+                      ? 'border-purple-400/70 bg-purple-500/15 dark:border-purple-500/60'
+                      : 'border-neutral-300/70 hover:bg-neutral-900/5 dark:border-neutral-700/70 dark:hover:bg-neutral-100/5'
+                  }`}
+                >
+                  <span>{m.label}</span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{m.hint}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
         )}
         <ErrorText>{error}</ErrorText>
         <div className="flex gap-2.5">

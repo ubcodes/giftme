@@ -84,19 +84,35 @@ function Editor() {
 
       <header className="grid gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
         <div className="flex flex-col gap-3">
-          <p className="text-xs tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
+          <button
+            type="button"
+            onClick={() => setDialog({ kind: 'edit-list' })}
+            className="group inline-flex cursor-pointer items-center gap-2 self-start rounded-full text-left text-xs tracking-[0.14em] text-neutral-500 uppercase hover:text-purple-700 dark:text-neutral-400 dark:hover:text-purple-300"
+            aria-label="Change occasion or date"
+          >
             {occasion(wishlist.occasion).label}
-            {wishlist.eventDate && ` · ${formatDate(wishlist.eventDate)}`}
+            {wishlist.eventDate ? ` · ${formatDate(wishlist.eventDate)}` : ' · add a date'}
             {countdown && ` · ${countdown}`}
-          </p>
-          <h1 className="font-display text-5xl leading-none sm:text-6xl">{wishlist.title}</h1>
+            <PencilIcon size={12} />
+          </button>
+          <div className="group flex items-start gap-3">
+            <h1 className="font-display text-5xl leading-none sm:text-6xl">{wishlist.title}</h1>
+            <button
+              type="button"
+              onClick={() => setDialog({ kind: 'edit-list' })}
+              aria-label="Edit wishlist details"
+              className={`mt-1 grid size-10 shrink-0 place-items-center ${secondaryButton}`}
+            >
+              <PencilIcon />
+            </button>
+          </div>
           <p className="text-[15px] text-neutral-600 dark:text-neutral-400">
             {naira(raised)} raised from {confirmed.length} {confirmed.length === 1 ? 'gift' : 'gifts'}
             {reservations.length > 0 && ` · ${reservations.length} reserved`}
           </p>
           <div className="mt-1 flex flex-wrap gap-2">
-            <button type="button" onClick={() => setDialog({ kind: 'edit-list' })} className={`min-h-10 px-4 text-sm ${secondaryButton}`}>
-              Edit details
+            <button type="button" onClick={() => setDialog({ kind: 'edit-list' })} className={`inline-flex min-h-10 items-center gap-2 px-4 text-sm ${secondaryButton}`}>
+              <PencilIcon size={14} /> Edit occasion, date & title
             </button>
             <a href={`/w/${user.handle}/${wishlist.slug}`} target="_blank" rel="noreferrer" className={`inline-flex min-h-10 items-center px-4 text-sm ${secondaryButton}`}>
               View as a guest ↗
@@ -329,6 +345,8 @@ function OwnerItemRow({
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="font-display truncate text-xl leading-tight">{item.title}</span>
             {item.kind === 'fund' && <Badge>Cash fund</Badge>}
+            {item.kind === 'gift' && !item.allowMoney && <Badge>Buy only</Badge>}
+            {item.kind === 'gift' && !item.allowReserve && item.allowMoney && <Badge>Money only</Badge>}
             {item.hidden && <Badge>Hidden</Badge>}
             {item.received && <Badge tone="green">Received</Badge>}
             {item.reserved && <Badge>Reserved</Badge>}
@@ -377,6 +395,15 @@ function OwnerItemRow({
         </div>
       </div>
     </li>
+  )
+}
+
+function PencilIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
   )
 }
 

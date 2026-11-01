@@ -41,9 +41,20 @@ export type PublicItem = {
   imageUrl: string | null
   note: string | null
   canReserve: boolean
+  canContribute: boolean
   percent: number | null
   remainingNgn: number | null
   state: ItemState
+}
+
+/** Google's own product pages need a consent screen that breaks for many guests; don't link to them. */
+function shopLink(link: string | null) {
+  if (!link) return null
+  try {
+    return /(^|\.)google\./.test(new URL(link).hostname) ? null : link
+  } catch {
+    return null
+  }
 }
 
 async function publicItems(items: ItemRow[]): Promise<PublicItem[]> {
@@ -57,10 +68,11 @@ async function publicItems(items: ItemRow[]): Promise<PublicItem[]> {
         title: item.title,
         priceNgn: item.price_ngn,
         priceUsd: item.price_usd,
-        link: item.link,
+        link: shopLink(item.link),
         imageUrl: item.image_url,
         note: item.note,
         canReserve: p.canReserve,
+        canContribute: p.canContribute,
         percent: p.percent,
         remainingNgn: p.remainingNgn,
         state: p.state,
@@ -124,6 +136,7 @@ export async function startContribution(input: { itemId: string; amountNgn: numb
 
   const progress = await progressFor(item, await reservedIds([item.id]))
   if (progress.state !== 'open') throw new UserError('This gift is already taken care of. Thank you!')
+  if (!progress.canContribute) throw new UserError('This gift can be reserved and bought, not paid toward.')
 
   const amountNgn = Math.round(input.amountNgn)
   if (amountNgn < MIN_CONTRIBUTION_NGN) throw new UserError(`The smallest contribution is ₦${MIN_CONTRIBUTION_NGN.toLocaleString()}.`)
@@ -352,6 +365,7 @@ export async function ownerWishlistDetail(ownerId: string, wishlistId: string) {
       link: item.link,
       note: item.note,
       allowReserve: !!item.allow_reserve,
+      allowMoney: item.kind === 'fund' || !!item.money_enabled,
       hidden: !!item.hidden,
       received: !!item.received,
       hasBalance: !!item.blnk_balance_id,
