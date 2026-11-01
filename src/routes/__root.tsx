@@ -34,7 +34,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   const { viewer } = Route.useRouteContext()
   return (
-    <AuthProvider mode={viewer.mode} publishableKey={viewer.publishableKey}>
+    <AuthProvider mode={viewer?.mode ?? 'off'} publishableKey={viewer?.publishableKey ?? null}>
       <Outlet />
     </AuthProvider>
   )

@@ -161,14 +161,20 @@ export function extractProduct(html: string, pageUrl: URL): ProductDraft {
     // keep the URL we fetched
   }
 
+  // Bot-check and error pages often carry only the shop's name; that's not a product title.
+  const siteName = meta['og:site_name'] ?? pageUrl.hostname.replace(/^www\./, '')
+  const generic = !product && !price && !!title && [siteName, pageUrl.hostname.replace(/^www\./, '').split('.')[0]].some(
+    (s) => s.toLowerCase() === title.toLowerCase(),
+  )
+
   return {
-    title: title ? title.slice(0, 200) : null,
-    imageUrl,
+    title: title && !generic ? title.slice(0, 200) : null,
+    imageUrl: generic ? null : imageUrl,
     priceNgn: converted.priceNgn,
     priceUsd: converted.priceUsd,
     originalPrice: price && converted.priceNgn === null ? `${price.currency ?? ''} ${price.amount}`.trim() : null,
     link,
-    siteName: meta['og:site_name'] ?? pageUrl.hostname.replace(/^www\./, ''),
+    siteName,
   }
 }
 

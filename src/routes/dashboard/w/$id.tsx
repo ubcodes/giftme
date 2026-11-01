@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { z } from 'zod'
 import { AddFundDialog, AddGiftDialog, EditItemDialog } from '@/components/item-editor'
 import { ShareButtons } from '@/components/share'
@@ -46,15 +46,9 @@ function Editor() {
   const { add } = Route.useSearch()
   const router = useRouter()
   const navigate = Route.useNavigate()
-  const [dialog, setDialog] = useState<DialogState>(null)
+  // Coming straight from "Create wishlist" opens the add-a-gift dialog.
+  const [dialog, setDialog] = useState<DialogState>(add ? { kind: 'add-gift' } : null)
   const { wishlist, items, contributions, reservations, user } = data
-
-  useEffect(() => {
-    if (add) {
-      setDialog({ kind: 'add-gift' })
-      void navigate({ search: {}, replace: true })
-    }
-  }, [add, navigate])
 
   const shareUrl = `${data.siteUrl}/w/${user.handle}/${wishlist.slug}`
   const confirmed = contributions.filter((c) => c.status === 'success')
@@ -62,9 +56,12 @@ function Editor() {
   const countdown = wishlist.eventDate ? countdownText(wishlist.eventDate) : null
 
   const refresh = () => router.invalidate()
-  const close = () => setDialog(null)
-  const saved = async () => {
+  const close = () => {
     setDialog(null)
+    if (add) void navigate({ search: {}, replace: true })
+  }
+  const saved = async () => {
+    close()
     await refresh()
   }
 

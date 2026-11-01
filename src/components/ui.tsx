@@ -83,6 +83,8 @@ function useModal(onClose: () => void) {
     const el = ref.current
     if (!el) return
     if (!el.open) el.showModal()
+    // showModal focuses the close button; start on the first field instead.
+    el.querySelector<HTMLElement>('input:not([type=hidden]):not([type=file]), textarea, select')?.focus()
     const handle = () => closeRef.current()
     el.addEventListener('close', handle)
     return () => el.removeEventListener('close', handle)
