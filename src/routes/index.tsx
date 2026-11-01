@@ -334,7 +334,7 @@ function HeroPreview() {
                 data-cursor="Give 🎁"
                 disabled={progress[i] >= 100}
                 onClick={() => give(i, 'You', true)}
-                className="liquid liquid-tint liquid-press shrink-0 cursor-pointer rounded-full px-3 py-1.5 text-xs disabled:opacity-40"
+                className={`shrink-0 px-3 py-1.5 text-xs ${primaryButton}`}
               >
                 Give
               </button>
@@ -477,7 +477,7 @@ function MagicLink() {
                   setTyped(0)
                   setPhase('typing')
                 }}
-                className={`liquid liquid-press cursor-pointer rounded-full px-3.5 py-1.5 text-sm ${i === example ? 'liquid-tint' : ''}`}
+                className={`px-3.5 py-1.5 text-sm ${i === example ? primaryButton : secondaryButton}`}
               >
                 {e.shop === 'a small shop' ? 'Any shop' : e.shop}
               </button>

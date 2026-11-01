@@ -33,13 +33,14 @@ export function LiquidGlass() {
 }
 
 /**
- * A soft glowing ring that trails the pointer, like a presence cursor. It grows over
- * links and buttons and shows a label from `data-cursor="…"`. Mouse users only.
+ * A little wrapped gift that trails the pointer, like the bee on brimble.io. It leans in
+ * the direction it's moving, and the lid pops open over links and buttons (with the
+ * `data-cursor` label when one is set). Mouse users only; the normal cursor stays.
  */
 export function FollowCursor() {
-  const ring = useRef<HTMLDivElement>(null)
+  const gift = useRef<HTMLDivElement>(null)
   const [label, setLabel] = useState<string | null>(null)
-  const [active, setActive] = useState(false)
+  const [open, setOpen] = useState(false)
   const [enabled, setEnabled] = useState(false)
 
   useEffect(() => {
@@ -49,14 +50,21 @@ export function FollowCursor() {
     setEnabled(true)
     let x = -100
     let y = -100
-    let rx = x
-    let ry = y
+    let gx = x
+    let gy = y
+    let tilt = 0
     let frame = 0
-    const loop = () => {
-      // Ease toward the pointer so the ring lags a little behind it.
-      rx += (x - rx) * 0.18
-      ry += (y - ry) * 0.18
-      if (ring.current) ring.current.style.transform = `translate3d(${rx}px, ${ry}px, 0)`
+    const loop = (t: number) => {
+      const dx = x - gx
+      gx += dx * 0.14
+      gy += (y - gy) * 0.14
+      // Lean into the movement, settle when still, and bob a little while hovering.
+      tilt += (Math.max(-25, Math.min(25, dx * 0.6)) - tilt) * 0.15
+      const bob = Math.sin(t / 380) * 2
+      if (gift.current) {
+        gift.current.style.transform = `translate3d(${gx + 16}px, ${gy + 14 + bob}px, 0)`
+        gift.current.style.setProperty('--tilt', `${tilt}deg`)
+      }
       frame = requestAnimationFrame(loop)
     }
     const onMove = (e: PointerEvent) => {
@@ -64,7 +72,7 @@ export function FollowCursor() {
       x = e.clientX
       y = e.clientY
       const target = (e.target as Element | null)?.closest?.('a, button, [data-cursor], summary') as HTMLElement | null
-      setActive(!!target)
+      setOpen(!!target)
       setLabel(target?.dataset.cursor ?? null)
     }
     const onLeave = () => {
@@ -83,18 +91,38 @@ export function FollowCursor() {
 
   if (!enabled) return null
   return (
-    <div ref={ring} aria-hidden="true" className="pointer-events-none fixed top-0 left-0 z-[100]">
-      <div
-        className={`-translate-x-1/2 -translate-y-1/2 rounded-full border transition-all duration-300 ease-out ${
-          label
-            ? 'flex h-9 items-center border-white/50 bg-gradient-to-r from-purple-500/85 via-pink-500/85 to-blue-500/85 px-3.5 text-xs whitespace-nowrap text-white shadow-lg backdrop-blur'
-            : active
-              ? 'size-12 border-purple-400/60 bg-purple-400/10'
-              : 'size-7 border-purple-400/50 bg-purple-400/5'
-        }`}
-      >
-        {label}
+    <div ref={gift} aria-hidden="true" className="pointer-events-none fixed top-0 left-0 z-[100] flex items-start gap-1.5 will-change-transform">
+      <div style={{ transform: 'rotate(var(--tilt, 0deg))' }}>
+      <svg width="26" height="26" viewBox="0 0 32 32" className={`drop-shadow-md transition-transform duration-300 ${open ? 'scale-115' : ''}`}>
+        <defs>
+          <linearGradient id="gift-box" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#c084fc" />
+            <stop offset="1" stopColor="#f472b6" />
+          </linearGradient>
+        </defs>
+        {/* box */}
+        <rect x="5" y="14" width="22" height="15" rx="2.5" fill="url(#gift-box)" />
+        <rect x="14.5" y="14" width="3" height="15" fill="#fff" opacity="0.9" />
+        {/* lid: lifts and tips back over things you can click */}
+        <g className="transition-transform duration-300 ease-out" style={{ transformOrigin: '6px 13px', transform: open ? 'translateY(-4px) rotate(-18deg)' : 'none' }}>
+          <rect x="3.5" y="9" width="25" height="6" rx="2" fill="#a855f7" />
+          <rect x="14.5" y="9" width="3" height="6" fill="#fff" opacity="0.9" />
+          <path d="M16 9c-2-4-7-5-7-2s7 2 7 2zM16 9c2-4 7-5 7-2s-7 2-7 2z" fill="#fff" stroke="#ec4899" strokeWidth="1.2" strokeLinejoin="round" />
+        </g>
+        {open && (
+          <g className="word-in">
+            <circle cx="10" cy="4" r="1.2" fill="#f59e0b" />
+            <circle cx="22" cy="3" r="1" fill="#3b82f6" />
+            <circle cx="16" cy="1.5" r="1" fill="#10b981" />
+          </g>
+        )}
+      </svg>
       </div>
+      {label && (
+        <span className="mt-1 rounded-full bg-neutral-900/85 px-2.5 py-1 text-[11px] whitespace-nowrap text-white shadow dark:bg-white/90 dark:text-neutral-900">
+          {label}
+        </span>
+      )}
     </div>
   )
 }
