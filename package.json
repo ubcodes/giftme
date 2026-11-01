@@ -10,6 +10,7 @@
     "build": "tsr generate && tsc --noEmit && vite build",
     "start": "node .output/server/index.mjs",
     "typecheck": "tsr generate && tsc --noEmit",
+    "blnk:init": "node scripts/init-blnk.mjs",
     "blnk:up": "docker compose -f blnk/docker-compose.yml up -d",
     "blnk:down": "docker compose -f blnk/docker-compose.yml down",
     "tunnel": "ngrok http 3200"

@@ -12,6 +12,7 @@ export const Route = createFileRoute('/')({
 const START_HREF = '/start'
 
 function Landing() {
+  const { viewer } = Route.useRouteContext()
   return (
     <div className="relative min-h-screen overflow-x-clip">
       <Glow tall />
@@ -19,8 +20,8 @@ function Landing() {
         <nav className="flex items-center justify-between pt-6">
           <Logo />
           <div className="flex items-center gap-2.5">
-            <a href={START_HREF} className={`hidden min-h-10 items-center px-4 text-sm sm:inline-flex ${secondaryButton}`}>
-              Sign in
+            <a href={START_HREF} className={`inline-flex min-h-10 items-center px-4 text-sm ${secondaryButton}`}>
+              {viewer?.user ? 'Your wishlists' : 'Sign in'}
             </a>
             <ThemeToggle />
           </div>

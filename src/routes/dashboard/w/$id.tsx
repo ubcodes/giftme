@@ -461,7 +461,7 @@ function ThankYouDialog({
 }) {
   const first = contribution.name?.split(' ')[0]
   const [note, setNote] = useState(
-    `Thank you so much${first ? `, ${first}` : ''}! Your gift toward the ${contribution.item.toLowerCase()} means a lot to me.\n\nWith love,`,
+    `Thank you so much${first ? `, ${first}` : ''}! Your gift means a lot to me.\n\nWith love,`,
   )
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
