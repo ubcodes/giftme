@@ -443,7 +443,13 @@ export async function lookupAccount(accountNumber: string, bankCode: string) {
   try {
     const res = await resolveAccount(accountNumber, bankCode)
     return { accountName: res.account_name }
-  } catch {
+  } catch (err) {
+    // Paystack test keys can only check 3 real bank accounts a day.
+    if (err instanceof Error && /test mode daily limit/i.test(err.message)) {
+      throw new UserError(
+        "Test mode can only check 3 real bank accounts a day. Try again tomorrow, or use the test account: Zenith Bank, 0000000000.",
+      )
+    }
     throw new UserError("We couldn't find that account. Please check the number and bank.")
   }
 }
