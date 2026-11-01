@@ -331,10 +331,10 @@ function OwnerItemRow({
     <li className={`relative flex flex-col gap-3 rounded-2xl p-3.5 sm:flex-row sm:items-center ${glassCard} ${item.hidden ? 'opacity-60' : ''}`}>
       <div className="flex min-w-0 flex-1 items-center gap-4">
         <div className="flex flex-col">
-          <button type="button" disabled={first} onClick={() => onMove(-1)} aria-label="Move up" className="cursor-pointer px-1 text-neutral-400 hover:text-neutral-800 disabled:invisible dark:hover:text-neutral-200">
+          <button type="button" disabled={first} onClick={() => onMove(-1)} aria-label="Move up" title="Move up the list (guests see this order)" className="cursor-pointer px-1 text-neutral-400 hover:text-neutral-800 disabled:invisible dark:hover:text-neutral-200">
             ▲
           </button>
-          <button type="button" disabled={last} onClick={() => onMove(1)} aria-label="Move down" className="cursor-pointer px-1 text-neutral-400 hover:text-neutral-800 disabled:invisible dark:hover:text-neutral-200">
+          <button type="button" disabled={last} onClick={() => onMove(1)} aria-label="Move down" title="Move down the list (guests see this order)" className="cursor-pointer px-1 text-neutral-400 hover:text-neutral-800 disabled:invisible dark:hover:text-neutral-200">
             ▼
           </button>
         </div>
