@@ -33,9 +33,9 @@ export function LiquidGlass() {
 }
 
 /**
- * A little wrapped gift that trails the pointer, like the bee on brimble.io. It leans in
- * the direction it's moving, and the lid pops open over links and buttons (with the
- * `data-cursor` label when one is set). Mouse users only; the normal cursor stays.
+ * The mouse pointer on the landing page is a little wrapped gift, like the bee on brimble.io.
+ * It leans in the direction it's moving, and the lid pops open over links and buttons (with
+ * the `data-cursor` label when one is set). Mouse users only; touch keeps the default.
  */
 export function FollowCursor() {
   const gift = useRef<HTMLDivElement>(null)
@@ -48,6 +48,8 @@ export function FollowCursor() {
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (!fine || still) return
     setEnabled(true)
+    // The gift replaces the system pointer on this page.
+    document.documentElement.classList.add('gift-cursor')
     let x = -100
     let y = -100
     let gx = x
@@ -56,13 +58,14 @@ export function FollowCursor() {
     let frame = 0
     const loop = (t: number) => {
       const dx = x - gx
-      gx += dx * 0.14
-      gy += (y - gy) * 0.14
+      // It is the cursor, so it stays close to the pointer: just enough easing to feel alive.
+      gx += dx * 0.55
+      gy += (y - gy) * 0.55
       // Lean into the movement, settle when still, and bob a little while hovering.
       tilt += (Math.max(-25, Math.min(25, dx * 0.6)) - tilt) * 0.15
-      const bob = Math.sin(t / 380) * 2
+      const bob = Math.sin(t / 380) * 1
       if (gift.current) {
-        gift.current.style.transform = `translate3d(${gx + 16}px, ${gy + 14 + bob}px, 0)`
+        gift.current.style.transform = `translate3d(${gx - 4}px, ${gy - 4 + bob}px, 0)`
         gift.current.style.setProperty('--tilt', `${tilt}deg`)
       }
       frame = requestAnimationFrame(loop)
@@ -84,6 +87,7 @@ export function FollowCursor() {
     document.documentElement.addEventListener('pointerleave', onLeave)
     return () => {
       cancelAnimationFrame(frame)
+      document.documentElement.classList.remove('gift-cursor')
       window.removeEventListener('pointermove', onMove)
       document.documentElement.removeEventListener('pointerleave', onLeave)
     }

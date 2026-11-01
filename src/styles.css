@@ -247,3 +247,12 @@ dialog::backdrop {
   40% { transform: scale(1.025); }
 }
 .bump { animation: bump 0.45s ease-out; }
+
+/* Landing page: the gift (FollowCursor) is the pointer, so hide the system one. */
+@media (pointer: fine) {
+  .gift-cursor,
+  .gift-cursor * {
+    cursor: none !important;
+  }
+}
+
