@@ -13,6 +13,7 @@
     "blnk:init": "node scripts/init-blnk.mjs",
     "blnk:up": "docker compose -f blnk/docker-compose.yml up -d",
     "blnk:down": "docker compose -f blnk/docker-compose.yml down",
+    "blnk:reset-ids": "node --env-file=.env scripts/reset-blnk-ids.mjs",
     "tunnel": "ngrok http 3200"
   },
   "dependencies": {

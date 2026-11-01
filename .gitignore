@@ -9,3 +9,4 @@ dist
 *.db-*
 blnk/blnk.json
 uploads
+blnk/brimble/brimble.env

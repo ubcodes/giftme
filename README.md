@@ -99,6 +99,11 @@ without a webhook. For bank transfers that land later, point Paystack at
 account is shared with the birthday wishlist; GiftMe only handles references that start
 with `gm_`.
 
+## Deploying Blnk to Brimble
+
+See [blnk/brimble/README.md](blnk/brimble/README.md): Blnk's official image on Brimble with
+managed Postgres and Redis, connected to Blnk Cloud for logs, traces and metrics.
+
 ## Environment variables
 
 | Variable | Required | What it is |
