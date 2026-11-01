@@ -441,7 +441,10 @@ export async function bankList() {
 
 export async function lookupAccount(accountNumber: string, bankCode: string) {
   try {
-    const res = await resolveAccount(accountNumber, bankCode)
+    // Paystack's test account (0000000000) counts towards that limit at any real bank, but its
+    // test bank 001 checks it for free. Payouts still go to the real bank code.
+    const testAccount = process.env.PAYSTACK_SECRET_KEY?.startsWith('sk_test_') && accountNumber === '0000000000'
+    const res = await resolveAccount(accountNumber, testAccount ? '001' : bankCode)
     return { accountName: res.account_name }
   } catch (err) {
     // Paystack test keys can only check 3 real bank accounts a day.
