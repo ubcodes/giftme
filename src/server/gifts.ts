@@ -250,7 +250,7 @@ async function notifyOwner(ownerId: string, itemTitle: string, amountKobo: numbe
       '',
       `${name ?? 'A friend'} just gave ${amount} toward "${itemTitle}".`,
       message ? `\nTheir note: "${message}"\n` : '',
-      `Paystack will settle it to your bank account. See every gift on your dashboard: ${siteUrl()}/dashboard`,
+      `It will be settled to your bank account. See every gift on your dashboard: ${siteUrl()}/dashboard`,
       '',
       'GiftMe',
     ].join('\n'),

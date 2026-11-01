@@ -1,5 +1,6 @@
 import { FetchBlockedError, robotsAllows, safeFetch } from './net'
 import { UserError } from './errors'
+import { amazonProduct, serpApiEnabled, shoppingSearch } from './serpapi'
 
 // Reads the details a shop publishes about its own product page: JSON-LD `Product` data,
 // OpenGraph and standard meta tags. These exist so that links preview nicely; we read them
@@ -14,6 +15,8 @@ export type ProductDraft = {
   originalPrice: string | null
   link: string
   siteName: string | null
+  /** True when the page couldn't be read and these details come from the closest match. */
+  approximate?: boolean
 }
 
 export function usdRate() {
@@ -178,6 +181,99 @@ export function extractProduct(html: string, pageUrl: URL): ProductDraft {
   }
 }
 
+type DirectResult = { draft: ProductDraft | null; finalUrl: URL; problem: string | null }
+
+/** Reads the page itself. Never throws for shop-side problems; reports them instead. */
+async function readDirect(url: URL, timeoutMs = 10_000): Promise<DirectResult> {
+  if (!(await robotsAllows(url))) return { draft: null, finalUrl: url, problem: 'This shop asks apps not to read its pages.' }
+  let res
+  try {
+    res = await safeFetch(url.toString(), { timeoutMs })
+  } catch (err) {
+    if (err instanceof FetchBlockedError) throw new UserError(err.message)
+    return { draft: null, finalUrl: url, problem: "We couldn't open that page." }
+  }
+  if (res.status >= 400) return { draft: null, finalUrl: res.url, problem: "The shop didn't let us read that page." }
+  if (!/html|xml/i.test(res.contentType)) return { draft: null, finalUrl: res.url, problem: "That link isn't a product page." }
+  const draft = extractProduct(res.body.toString('utf8'), res.url)
+  return { draft: { ...draft, link: draft.link || url.toString() }, finalUrl: res.url, problem: null }
+}
+
+/** Quick page read used to add photos and prices to search results. */
+export async function readProductPage(link: string) {
+  try {
+    return (await readDirect(new URL(link), 6000)).draft
+  } catch {
+    return null
+  }
+}
+
+function brandOf(url: URL) {
+  const parts = url.hostname.replace(/^www\./, '').split('.')
+  const name = parts.length > 2 && parts[parts.length - 2].length <= 3 ? parts[parts.length - 3] : parts[parts.length - 2]
+  return name ? name[0].toUpperCase() + name.slice(1) : url.hostname
+}
+
+/** Product words from a URL like temu.com/cute-cat-plush-pillow-g-601099512345678.html */
+function wordsFromPath(url: URL) {
+  const segments = decodeURIComponent(url.pathname).split('/').filter(Boolean)
+  for (const seg of segments.reverse()) {
+    const words = seg
+      .replace(/\.(html?|php|aspx?)$/i, '')
+      .replace(/-g-\d+$/i, '')
+      .split(/[-_+\s]+/)
+      .filter((w) => /[a-z]/i.test(w) && !/\d{4,}/.test(w) && w.length > 1)
+    if (words.length >= 2) return words.slice(0, 12).join(' ')
+  }
+  return null
+}
+
+function priceFields(text: string | undefined | null, amount?: number | null) {
+  const parsed = parsePriceText(text)
+  const value = parsed?.amount ?? amount ?? NaN
+  const converted = toNaira(value, parsed?.currency ?? (text ? null : 'USD'))
+  return { ...converted, originalPrice: converted.priceNgn === null && text ? text : null }
+}
+
+/** For shops that block page reads: Amazon's product API, else the closest shopping match. */
+async function lookupElsewhere(url: URL, original: string): Promise<ProductDraft | null> {
+  if (!serpApiEnabled()) return null
+  try {
+    const host = url.hostname.replace(/^www\./, '')
+    const asin = url.pathname.match(/\/(?:dp|gp\/product|gp\/aw\/d|product)\/([A-Z0-9]{10})/i)?.[1]
+    if (/(^|\.)amazon\./.test(host) && asin) {
+      const p = await amazonProduct(asin.toUpperCase(), host)
+      if (p?.title) {
+        return {
+          title: p.title.slice(0, 200),
+          imageUrl: p.thumbnails?.[0] ?? p.thumbnail ?? null,
+          ...priceFields(p.price, p.extracted_price),
+          link: `https://${host}/dp/${asin.toUpperCase()}`,
+          siteName: 'Amazon',
+          approximate: false,
+        }
+      }
+    }
+    const words = wordsFromPath(url)
+    if (!words) return null
+    const brand = brandOf(url)
+    const results = await shoppingSearch(`${words} ${brand}`)
+    const pick = results.find((r) => r.source?.toLowerCase().includes(brand.toLowerCase())) ?? results[0]
+    if (!pick) return null
+    return {
+      title: (pick.title ?? words).slice(0, 200),
+      imageUrl: pick.serpapi_thumbnail ?? pick.thumbnail ?? null,
+      ...priceFields(pick.price, pick.extracted_price),
+      link: original,
+      siteName: brand,
+      approximate: true,
+    }
+  } catch (err) {
+    console.warn('[products] lookup fallback failed', err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
 export async function previewLink(input: string): Promise<ProductDraft> {
   let url: URL
   try {
@@ -185,18 +281,24 @@ export async function previewLink(input: string): Promise<ProductDraft> {
   } catch {
     throw new UserError("That doesn't look like a link. Copy it from the shop's address bar.")
   }
-  if (!(await robotsAllows(url))) {
-    throw new UserError("This shop asks apps not to read its pages, so please fill in the details yourself.")
+  const direct = await readDirect(url)
+  const d = direct.draft
+  if (d && d.title && d.priceNgn && d.imageUrl) return d
+
+  const other = await lookupElsewhere(direct.finalUrl, url.toString())
+  if (other) {
+    // Prefer what the page itself said, and fill the gaps from the lookup.
+    return {
+      title: d?.title ?? other.title,
+      imageUrl: d?.imageUrl ?? other.imageUrl,
+      priceNgn: d?.priceNgn ?? other.priceNgn,
+      priceUsd: d?.priceNgn ? d.priceUsd : other.priceUsd,
+      originalPrice: d?.priceNgn ? null : other.originalPrice,
+      link: d?.link ?? other.link,
+      siteName: d?.siteName ?? other.siteName,
+      approximate: other.approximate && !d?.title,
+    }
   }
-  let res
-  try {
-    res = await safeFetch(url.toString())
-  } catch (err) {
-    if (err instanceof FetchBlockedError) throw new UserError(err.message)
-    throw new UserError("We couldn't open that page. You can still add the details yourself.")
-  }
-  if (res.status >= 400) throw new UserError(`The shop didn't let us in (error ${res.status}). You can still add the details yourself.`)
-  if (!/html|xml/i.test(res.contentType)) throw new UserError("That link isn't a product page.")
-  const draft = extractProduct(res.body.toString('utf8'), res.url)
-  return { ...draft, link: draft.link || url.toString() }
+  if (d && (d.title || d.imageUrl)) return d
+  throw new UserError(`${direct.problem ?? "We couldn't read that page."} You can still add the details yourself.`)
 }

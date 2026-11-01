@@ -38,7 +38,7 @@ function ThankYou() {
   }, [ref])
 
   const copy: Record<string, { title: string; body: string }> = {
-    checking: { title: 'One moment…', body: 'Confirming your payment with Paystack.' },
+    checking: { title: 'One moment…', body: 'Confirming your payment.' },
     pending: { title: 'Almost there', body: "Your payment is still on its way. You can close this page; it'll show up once it lands." },
     success: { title: 'Thank you', body: 'Your gift is in. It means a lot, truly.' },
     failed: { title: "That didn't go through", body: 'No money was taken for this attempt. You can try again from the list.' },

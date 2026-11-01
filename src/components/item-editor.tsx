@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { addItemFn, previewLinkFn, searchProductsFn, updateItemFn } from '@/server/fns/owner'
 import type { ProductResult } from '@/server/search'
 import { naira } from '@/lib/format'
@@ -28,9 +28,14 @@ const EMPTY_GIFT: ItemValues = {
   allowReserve: true,
 }
 
-type Tab = 'link' | 'search' | 'manual'
+type Tab = 'find' | 'manual'
 
-/** "Add a gift": paste a link, search, or type it in, then confirm the details. */
+function looksLikeLink(text: string) {
+  const t = text.trim()
+  return /^https?:\/\//i.test(t) || (/^[^\s]+\.[a-z]{2,}\/\S*/i.test(t) && !t.includes(' '))
+}
+
+/** "Add a gift": paste a link or type what you want, then confirm the details. */
 export function AddGiftDialog({
   wishlistId,
   searchEnabled,
@@ -44,15 +49,16 @@ export function AddGiftDialog({
   onClose: () => void
   onSaved: () => void
 }) {
-  const [tab, setTab] = useState<Tab>('link')
+  const [tab, setTab] = useState<Tab>('find')
   const [draft, setDraft] = useState<ItemValues | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'link', label: 'Paste a link' },
-    ...(searchEnabled ? [{ id: 'search' as const, label: 'Search' }] : []),
-    { id: 'manual', label: 'Type it in' },
-  ]
+  async function save(values: ItemValues) {
+    const res = await addItemFn({ data: { wishlistId, ...values } }).catch(() => ({ ok: false as const, error: 'Please try again.' }))
+    if (!res.ok) return res.error
+    onSaved()
+    return null
+  }
 
   return (
     <Dialog title={draft ? 'Check the details' : 'Add a gift'} subtitle={draft ? notice ?? 'Change anything you like, then save.' : undefined} onClose={onClose} wide>
@@ -65,17 +71,17 @@ export function AddGiftDialog({
             setDraft(null)
             setNotice(null)
           }}
-          onSubmit={async (values) => {
-            const res = await addItemFn({ data: { wishlistId, ...values } }).catch(() => ({ ok: false as const, error: 'Please try again.' }))
-            if (!res.ok) return res.error
-            onSaved()
-            return null
-          }}
+          onSubmit={save}
         />
       ) : (
         <div className="flex flex-col gap-5">
           <div className="flex gap-1 rounded-full border border-neutral-300/70 p-1 dark:border-neutral-700/70" role="tablist">
-            {tabs.map((t) => (
+            {(
+              [
+                { id: 'find', label: searchEnabled ? 'Paste a link or search' : 'Paste a link' },
+                { id: 'manual', label: 'Type it in' },
+              ] as const
+            ).map((t) => (
               <button
                 key={t.id}
                 type="button"
@@ -90,142 +96,195 @@ export function AddGiftDialog({
               </button>
             ))}
           </div>
-          {tab === 'link' && (
-            <LinkTab
-              onFound={(d, msg) => {
+          {tab === 'find' && (
+            <FindTab
+              searchEnabled={searchEnabled}
+              onPick={(d, msg) => {
                 setDraft(d)
                 setNotice(msg)
               }}
             />
           )}
-          {tab === 'search' && <SearchTab onPick={(d) => setDraft(d)} />}
-          {tab === 'manual' && (
-            <ItemForm
-              initial={EMPTY_GIFT}
-              usdRate={usdRate}
-              submitLabel="Add to wishlist"
-              onSubmit={async (values) => {
-                const res = await addItemFn({ data: { wishlistId, ...values } }).catch(() => ({ ok: false as const, error: 'Please try again.' }))
-                if (!res.ok) return res.error
-                onSaved()
-                return null
-              }}
-            />
-          )}
+          {tab === 'manual' && <ItemForm initial={EMPTY_GIFT} usdRate={usdRate} submitLabel="Add to wishlist" onSubmit={save} />}
         </div>
       )}
     </Dialog>
   )
 }
 
-function LinkTab({ onFound }: { onFound: (draft: ItemValues, notice: string | null) => void }) {
-  const [url, setUrl] = useState('')
-  const [busy, setBusy] = useState(false)
+/** One box: paste a shop link to fill in the details, or type to see matching products. */
+function FindTab({ searchEnabled, onPick }: { searchEnabled: boolean; onPick: (draft: ItemValues, notice: string | null) => void }) {
+  const [text, setText] = useState('')
+  const [reading, setReading] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const [results, setResults] = useState<ProductResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const isLink = looksLikeLink(text)
+  const latest = useRef('')
 
-  async function fetchLink(e: React.FormEvent) {
-    e.preventDefault()
-    setBusy(true)
+  async function readLink(url: string) {
+    setReading(true)
     setError(null)
     const res = await previewLinkFn({ data: { url } }).catch(() => ({ ok: false as const, error: "We couldn't open that link." }))
-    setBusy(false)
-    if (!res.ok) {
-      setError(res.error)
-      return
-    }
+    setReading(false)
+    if (!res.ok) return setError(res.error)
     const d = res.draft
     const missing = [!d.title && 'name', !d.priceNgn && 'price', !d.imageUrl && 'photo'].filter(Boolean)
-    onFound(
+    const from = d.siteName ?? 'the shop'
+    onPick(
       { ...EMPTY_GIFT, title: d.title ?? '', priceNgn: d.priceNgn, priceUsd: d.priceUsd, imageUrl: d.imageUrl, link: d.link },
-      missing.length
-        ? `We filled in what ${d.siteName ?? 'the shop'} shares. Please add the ${missing.join(' and ')}${d.originalPrice ? ` (listed at ${d.originalPrice})` : ''}.`
-        : `Filled in from ${d.siteName ?? 'the shop'}. Change anything you like, then save.`,
+      d.approximate
+        ? `${from} doesn't let apps read its pages, so we found the closest match. Please check the name and price.`
+        : missing.length
+          ? `We filled in what ${from} shares. Please add the ${missing.join(' and ')}${d.originalPrice ? ` (listed at ${d.originalPrice})` : ''}.`
+          : `Filled in from ${from}. Change anything you like, then save.`,
     )
   }
 
+  // Search as you type, once the typing pauses.
+  useEffect(() => {
+    const q = text.trim()
+    setError(null)
+    if (!searchEnabled || isLink || q.length < 3) {
+      setResults(null)
+      setSearching(false)
+      return
+    }
+    setSearching(true)
+    const t = setTimeout(async () => {
+      latest.current = q
+      const res = await searchProductsFn({ data: { query: q } }).catch(() => ({ ok: false as const, error: 'Search failed. Try again.' }))
+      if (latest.current !== q) return
+      setSearching(false)
+      if (!res.ok) return setError(res.error)
+      setResults(res.results)
+    }, 700)
+    return () => clearTimeout(t)
+  }, [text, isLink, searchEnabled])
+
+  const local = results?.filter((r) => r.region === 'ng') ?? []
+  const abroad = results?.filter((r) => r.region === 'intl') ?? []
+
   return (
-    <form onSubmit={fetchLink} className="flex flex-col gap-4">
-      <p className="text-sm text-neutral-600 dark:text-neutral-400">
-        Copy the link from any shop (Jumia, Konga, Amazon, a small Instagram store with a website…) and paste it here.
-        We'll fill in the name, photo and price.
-      </p>
-      <div className="flex flex-col gap-2.5 sm:flex-row">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (isLink) void readLink(text.trim())
+      }}
+      className="flex flex-col gap-4"
+    >
+      <div className="relative">
+        <svg className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-neutral-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          {isLink ? <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" /> : <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>}
+        </svg>
         <input
-          className={inputClass}
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://www.jumia.com.ng/…"
-          inputMode="url"
-          autoFocus
-          required
+          className={`${inputClass} !pl-10`}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData('text')
+            if (looksLikeLink(pasted)) {
+              e.preventDefault()
+              setText(pasted.trim())
+              void readLink(pasted.trim())
+            }
+          }}
+          placeholder={searchEnabled ? 'Paste a link, or type what you’d love: “drum set”' : 'https://www.jumia.com.ng/…'}
+          inputMode={searchEnabled ? 'search' : 'url'}
         />
-        <button type="submit" disabled={busy || url.trim().length < 4} className={`min-h-11 shrink-0 px-5 text-[15px] ${primaryButton}`}>
-          {busy ? 'Reading the page…' : 'Fill in details'}
-        </button>
       </div>
+
+      {isLink && (
+        <button type="submit" disabled={reading} className={`min-h-11 text-[15px] ${primaryButton}`}>
+          {reading ? 'Reading the page…' : 'Fill in details'}
+        </button>
+      )}
+      {!text && (
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          Paste a link from any shop (Jumia, Amazon, Temu, a small store's website…) and we'll fill in the name, photo and
+          price.{searchEnabled && ' Or just type what you want and pick from shops that sell it.'}
+        </p>
+      )}
       <ErrorText>{error}</ErrorText>
-      {error && (
+      {error && isLink && (
         <button
           type="button"
-          onClick={() => onFound({ ...EMPTY_GIFT, link: /^https?:\/\//.test(url) ? url : null }, 'Add the details by hand.')}
+          onClick={() => onPick({ ...EMPTY_GIFT, link: /^https?:\/\//.test(text) ? text.trim() : null }, 'Add the details by hand.')}
           className="self-start text-sm underline underline-offset-4"
         >
           Add it by hand instead
         </button>
       )}
+
+      {searching && !results && <ResultSkeleton />}
+      {results && results.length === 0 && !searching && <p className="text-sm text-neutral-500">Nothing found. Try other words, or paste a link.</p>}
+      {results && results.length > 0 && (
+        <div className={`flex max-h-[55vh] flex-col gap-5 overflow-y-auto pr-1 transition-opacity ${searching ? 'opacity-60' : ''}`}>
+          {local.length > 0 && <ResultGroup title="Sold in Nigeria" results={local} onPick={onPick} />}
+          {abroad.length > 0 && <ResultGroup title="International shops" note="Prices converted to naira" results={abroad} onPick={onPick} />}
+        </div>
+      )}
     </form>
   )
 }
 
-function SearchTab({ onPick }: { onPick: (draft: ItemValues) => void }) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<ProductResult[] | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function search(e: React.FormEvent) {
-    e.preventDefault()
-    setBusy(true)
-    setError(null)
-    const res = await searchProductsFn({ data: { query } }).catch(() => ({ ok: false as const, error: 'Search failed. Try again.' }))
-    setBusy(false)
-    if (!res.ok) return setError(res.error)
-    setResults(res.results)
-  }
-
+function ResultGroup({
+  title,
+  note,
+  results,
+  onPick,
+}: {
+  title: string
+  note?: string
+  results: ProductResult[]
+  onPick: (draft: ItemValues, notice: string | null) => void
+}) {
   return (
-    <div className="flex flex-col gap-4">
-      <form onSubmit={search} className="flex flex-col gap-2.5 sm:flex-row">
-        <input className={inputClass} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Try “drum set” or “air fryer”" autoFocus />
-        <button type="submit" disabled={busy || query.trim().length < 2} className={`min-h-11 shrink-0 px-5 text-[15px] ${primaryButton}`}>
-          {busy ? 'Searching…' : 'Search'}
-        </button>
-      </form>
-      <ErrorText>{error}</ErrorText>
-      {results && results.length === 0 && <p className="text-sm text-neutral-500">Nothing found. Try other words.</p>}
-      {results && results.length > 0 && (
-        <div className="grid max-h-[55vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
-          {results.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() =>
-                onPick({ ...EMPTY_GIFT, title: r.title, priceNgn: r.priceNgn, priceUsd: r.priceUsd, imageUrl: r.imageUrl, link: r.link })
-              }
-              className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-neutral-200/80 bg-white/60 text-left transition-colors hover:border-purple-400/70 dark:border-neutral-800 dark:bg-neutral-900/50"
-            >
-              <div className="aspect-square w-full bg-white p-2">
-                {r.imageUrl ? <img src={r.imageUrl} alt="" className="size-full object-contain" loading="lazy" /> : null}
-              </div>
-              <div className="flex flex-col gap-0.5 p-2.5">
-                <span className="line-clamp-2 text-sm leading-snug">{r.title}</span>
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">{r.priceNgn ? naira(r.priceNgn) : r.priceText}</span>
-                {r.source && <span className="truncate text-xs text-neutral-500">{r.source}</span>}
-              </div>
-            </button>
-          ))}
+    <section className="flex flex-col gap-2.5">
+      <p className="text-xs tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
+        {title}
+        {note && <span className="tracking-normal normal-case"> · {note}</span>}
+      </p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {results.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() =>
+              onPick(
+                { ...EMPTY_GIFT, title: r.title, priceNgn: r.priceNgn, priceUsd: r.priceUsd, imageUrl: r.imageUrl, link: r.link },
+                r.source ? `From ${r.source}. Change anything you like, then save.` : null,
+              )
+            }
+            className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-neutral-200/80 bg-white/60 text-left transition-all hover:-translate-y-0.5 hover:border-purple-400/70 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900/50"
+          >
+            <div className="aspect-square w-full bg-white p-2">
+              {r.imageUrl ? <img src={r.imageUrl} alt="" className="size-full object-contain" loading="lazy" /> : null}
+            </div>
+            <div className="flex flex-col gap-0.5 p-2.5">
+              <span className="line-clamp-2 text-sm leading-snug">{r.title}</span>
+              <span className="text-sm text-neutral-600 dark:text-neutral-400">{r.priceNgn ? naira(r.priceNgn) : r.priceText}</span>
+              {r.source && <span className="truncate text-xs text-neutral-500">{r.source}</span>}
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ResultSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Searching">
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="flex animate-pulse flex-col overflow-hidden rounded-xl border border-neutral-200/80 dark:border-neutral-800">
+          <div className="aspect-square bg-neutral-200/70 dark:bg-neutral-800" />
+          <div className="flex flex-col gap-1.5 p-2.5">
+            <div className="h-3 w-4/5 rounded bg-neutral-200/80 dark:bg-neutral-800" />
+            <div className="h-3 w-1/3 rounded bg-neutral-200/80 dark:bg-neutral-800" />
+          </div>
         </div>
-      )}
+      ))}
     </div>
   )
 }

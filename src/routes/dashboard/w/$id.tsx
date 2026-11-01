@@ -159,7 +159,7 @@ function Editor() {
 
       <section className="flex flex-col gap-4">
         <h2 className="font-display text-3xl">Who gave</h2>
-        <p className="-mt-2 text-sm text-neutral-500 dark:text-neutral-400">Only you can see names, amounts and notes. Each gift is recorded in the GiftMe Blnk ledger.</p>
+        <p className="-mt-2 text-sm text-neutral-500 dark:text-neutral-400">Only you can see names, amounts and notes.</p>
         <div className={`overflow-x-auto rounded-2xl ${glassCard}`}>
           <table className="w-full min-w-[680px] text-left text-sm">
             <thead className="text-neutral-500 dark:text-neutral-400">
@@ -262,7 +262,7 @@ function Editor() {
               intro: wishlist.intro,
               coverUrl: wishlist.coverUrl,
             }}
-            ownerFirstName={user.displayName.split(' ')[0]}
+            owner={user}
             submitLabel="Save"
             onSubmit={async (values) => {
               const res = await updateWishlistFn({ data: { id: wishlist.id, ...values } }).catch(() => ({ ok: false as const, error: 'Please try again.' }))

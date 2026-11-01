@@ -75,11 +75,20 @@ You need Node 22.12+ and Docker. Keep the project outside iCloud-synced folders
 3. Restart `npm run dev`. The sign-in page now shows Clerk's sign-in, and new users get
    their Google photo as a starting profile photo.
 
-### Product search (optional)
+### Product search and blocked shops (optional)
 
-Create a key at https://serpapi.com, put it in `.env` as `SERPAPI_KEY`, and restart. A
-**Search** tab appears in **Add a gift**. Without a key the tab is hidden; link pasting
-always works.
+Create a key at https://serpapi.com, put it in `.env` as `SERPAPI_KEY`, and restart. Then:
+
+- **Search as you type** in **Add a gift**: Nigerian shops come from Google web results in
+  Nigeria (with naira prices; each shop page's own photo and price are added), and
+  international shops from Google Shopping (US, converted to naira). SerpApi's Google
+  Shopping doesn't support `gl=ng`, which is why Nigeria uses web results.
+- **Shops that block page reads** still work when a link is pasted: Amazon links go through
+  SerpApi's Amazon product API (by ASIN); others (e.g. Temu) use the product words in the URL
+  to find the closest match, and the app tells the owner to check name and price.
+
+Each search uses about 2 SerpApi credits (results are cached for 30 minutes). Without a key,
+search is hidden and link pasting reads the page's own metadata only.
 
 ### Paystack webhook (optional locally)
 
@@ -107,7 +116,8 @@ with `gm_`.
 | `USD_NGN_RATE` | no | Naira per dollar for dollar prices. Default `1500`. |
 | `PLATFORM_FEE_PERCENT` | no | GiftMe's cut of each gift, kept by the main Paystack account. Default `0`. |
 | `RESEND_API_KEY` | no | Sends emails (new-gift alerts, thank-you notes) via Resend. Without it emails go to the server log. |
-| `EMAIL_FROM` | no | Sender, e.g. `GiftMe <hello@yourdomain>`. Needed with `RESEND_API_KEY`. |
+| `EMAIL_FROM` | no | Sender, quoted, e.g. `"GiftMe <hello@yourdomain>"`. Until you verify a domain in Resend, use `"GiftMe <onboarding@resend.dev>"`, which only delivers to your own Resend account email. |
+| `VITE_REPO_URL` | no | Link to the public source code; shows a "View the code" button on the landing page. |
 | `UPLOAD_DIR` | no | Folder for uploaded and copied images. Default `uploads`. |
 
 ## How money moves

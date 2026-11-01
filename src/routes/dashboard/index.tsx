@@ -39,7 +39,7 @@ function Dashboard() {
           <div>
             <p className="font-display text-2xl">Add your bank account to receive gifts</p>
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              Paystack sends every contribution straight to your account. Until then, friends can still reserve gifts.
+              Every contribution goes straight to your account. Until then, friends can still reserve gifts.
             </p>
           </div>
           <Link to="/dashboard/settings" hash="payouts" className={`inline-flex min-h-10 shrink-0 items-center px-4 text-sm ${primaryButton}`}>

@@ -69,7 +69,7 @@ function PublicWishlist() {
         </nav>
 
         <header className="flex flex-col gap-5 pt-14 pb-12 sm:pt-20">
-          {wishlist.coverUrl && <img src={wishlist.coverUrl} alt="" className="mb-4 aspect-[16/6] w-full rounded-3xl object-cover shadow-sm" />}
+          {wishlist.coverUrl && <img src={wishlist.coverUrl} alt="" className="mb-4 aspect-[16/5] max-h-72 w-full rounded-3xl object-cover shadow-sm" />}
           <div className="flex max-w-2xl flex-col gap-5">
             <p className="text-xs tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
               {occasion(wishlist.occasion).label}
@@ -109,7 +109,7 @@ function PublicWishlist() {
         </main>
 
         <footer className="flex flex-col gap-3 border-t border-neutral-200 py-8 text-xs text-neutral-500 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800 dark:text-neutral-400">
-          <span>Payments by Paystack · every naira tracked in a Blnk ledger</span>
+          <span>Secure payments in naira · open source</span>
           <span className="flex items-center gap-2">
             Made with <Logo />
           </span>
@@ -278,7 +278,7 @@ function ContributeDialog({ item, ownerFirstName, min, onClose }: { item: Public
         <Field label="Your name" hint={`optional, only ${ownerFirstName} sees it`}>
           <input name="name" className={inputClass} autoComplete="name" maxLength={80} />
         </Field>
-        <Field label="Email" hint="for your Paystack receipt">
+        <Field label="Email" hint="for your receipt">
           <input name="email" type="email" required className={inputClass} autoComplete="email" />
         </Field>
         <Field label={`A note for ${ownerFirstName}`} hint="optional">
@@ -286,9 +286,9 @@ function ContributeDialog({ item, ownerFirstName, min, onClose }: { item: Public
         </Field>
         <ErrorText>{error}</ErrorText>
         <button type="submit" disabled={busy || !amount} className={`min-h-12 text-[15px] ${primaryButton}`}>
-          {busy ? 'Opening Paystack…' : `Contribute ${amount ? naira(Number(amount)) : ''}`}
+          {busy ? 'Opening secure checkout…' : `Contribute ${amount ? naira(Number(amount)) : ''}`}
         </button>
-        <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">Pay by card, bank transfer or USSD on Paystack.</p>
+        <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">Pay by card, bank transfer or USSD.</p>
       </form>
     </Dialog>
   )

@@ -13,7 +13,7 @@ export const Route = createRootRoute({
       { title: 'GiftMe · wishlists your friends can actually give to' },
       {
         name: 'description',
-        content: 'Make a wishlist for any occasion, share one link, and let friends chip in or reserve a gift. Paid in naira with Paystack.',
+        content: 'Make a wishlist for any occasion, share one link, and let friends chip in or reserve a gift. Paid in naira.',
       },
     ],
     links: [

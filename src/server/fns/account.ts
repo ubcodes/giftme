@@ -63,3 +63,13 @@ export const saveProfileFn = createServerFn({ method: 'POST' })
       return {}
     }),
   )
+
+export const setAvatarFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ avatarUrl: z.string().max(2000).nullable() }))
+  .handler(({ data }) =>
+    attempt(async () => {
+      const row = await requireUser()
+      await run('UPDATE users SET avatar_url = ? WHERE id = ?', [data.avatarUrl, row.id])
+      return {}
+    }),
+  )

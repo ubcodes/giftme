@@ -22,7 +22,7 @@ function NewWishlist() {
       </div>
       <div className={`rounded-3xl p-6 sm:p-8 ${glassCard}`}>
         <WishlistForm
-          ownerFirstName={user.displayName.split(' ')[0]}
+          owner={user}
           submitLabel="Create wishlist"
           onSubmit={async (values) => {
             const res = await createWishlistFn({ data: values }).catch(() => ({ ok: false as const, error: 'Please try again.' }))
