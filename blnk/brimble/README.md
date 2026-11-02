@@ -18,36 +18,51 @@ Pick the same region for all four.
 
 ## 1. Databases
 
-1. **New project → Database → PostgreSQL**, name `giftme-pg`, **Provision**.
-2. **New project → Database → Redis**, name `giftme-redis`, **Provision**.
-3. When each says `active`, open it and copy its **connection string** into
-   `blnk/brimble/brimble.env`: Postgres → `BLNK_DATA_SOURCE_DNS`, Redis → `BLNK_REDIS_DNS`.
-   - If the Postgres string has no `sslmode`, add `?sslmode=require` at the end.
+1. **New project → Database → PostgreSQL** and **→ Redis**, in the same environment and region
+   as the Blnk services below. Public access can stay off: Blnk reaches them over Brimble's
+   private network.
+2. Nothing to copy: the services reference the databases' `PRIVATE_CONNECTION_STRING` by name.
 
-## 2. Blnk API (`giftme-blnk`)
+## 2. Blnk API (`giftme-blnk`) and worker (`giftme-blnk-worker`)
 
-1. **New project → Docker image**, image `ghcr.io/blnkfinance/blnk:0.15.5`.
-2. **Service type:** Web service. Same region as the databases.
-3. **Environment variables:** paste everything from `blnk/brimble/brimble.env`.
-4. **Deploy**, then open **Settings → Build** and set the **start command**:
+Created with the CLI (`brimble login` first, with a Full access API key). New projects go to
+the workspace's **default environment**, so make the databases' environment the default while
+creating them, or copy them over afterwards with `brimble project duplicate <name> --env <env>`.
 
-   ```
-   sh -c 'cd /tmp && blnk migrate up && BLNK_SERVER_PORT=$PORT exec blnk start'
-   ```
-
-   Redeploy. The logs should end with `Server started on http port …`.
-5. Copy the service's public URL (e.g. `https://giftme-blnk.brimble.app`).
-
-## 3. Worker (`giftme-blnk-worker`)
-
-Same as step 2, but **Service type: Worker**, the same environment variables, and start
-command:
-
-```
-sh -c 'cd /tmp && exec blnk workers'
+```bash
+brimble project create --image ghcr.io/blnkfinance/blnk:0.15.5 --name giftme-blnk --type web-service
+brimble project create --image ghcr.io/blnkfinance/blnk:0.15.5 --name giftme-blnk-worker --type worker
 ```
 
-Logs should show `Workers started.`
+Environment variables on **both** (`brimble env set <project> -f <file>`), with the database
+names from step 1:
+
+```
+BLNK_SERVER_SECRET_KEY=<from brimble.env>
+BLNK_PROJECT_NAME=GiftMe
+BLNK_SERVER_SECURE=true
+BLNK_ENABLE_OBSERVABILITY=true
+BLNK_DATA_SOURCE_DNS={{@postgresql-db-krm5.PRIVATE_CONNECTION_STRING}}?sslmode=disable
+BLNK_REDIS_DNS={{@redis-db-dt98.PRIVATE_CONNECTION_STRING}}
+```
+
+The private Postgres address has no TLS, hence `sslmode=disable` (traffic stays inside Brimble).
+
+On the API service only, `BLNK_SERVER_PORT=8000` (the `PORT` Brimble routes to; check it with
+`brimble env pull`).
+
+Brimble has no start-command field for image projects, so the image's own `blnk start` runs,
+and each service gets a **Pre-start command** in the dashboard (**Configuration → Build &
+Deploy**):
+
+| Service | Pre-start command |
+| --- | --- |
+| `giftme-blnk` | `blnk migrate up` |
+| `giftme-blnk-worker` | `exec blnk workers` (replaces the process, so the worker never reaches `blnk start`) |
+
+A background `blnk workers &` does not survive the pre-start step. With `exec`, the worker's
+deployment keeps showing **Building** on the dashboard because its pre-start never returns, but
+it processes jobs; check with a queued transaction (below).
 
 ## 4. Blnk Cloud
 
@@ -64,7 +79,7 @@ Logs should show `Workers started.`
 In GiftMe's `.env`:
 
 ```
-BLNK_URL=<the giftme-blnk URL from step 2>
+BLNK_URL=<the giftme-blnk URL, e.g. https://giftme-blnk-blnk-test.brimble.app>
 BLNK_SECRET_KEY=<BLNK_SERVER_SECRET_KEY from brimble.env>
 ```
 
@@ -84,3 +99,9 @@ Restart `npm run dev`.
 curl -s -o /dev/null -w '%{http_code}\n' <URL>/ledgers                      # 401 without a key
 curl -s <URL>/ledgers -H "X-Blnk-Key: <secret>"                             # [] or your ledgers
 ```
+
+Worker check: post a transaction without `skip_queue` and read the balance a few seconds later;
+it only moves if the worker picked the job up.
+
+Until a Blnk Cloud DSN is set, the logs repeat `traces export: ... localhost:4318 ... connection
+refused` because observability is on with nowhere to send traces. Harmless; step 4 fixes it.
