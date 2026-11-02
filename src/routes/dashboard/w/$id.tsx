@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { AddFundDialog, AddGiftDialog, EditItemDialog } from '@/components/item-editor'
 import { ShareButtons } from '@/components/share'
-import { Bar, Dialog, ErrorText, Field, GiftIcon, glassCard } from '@/components/ui'
+import { Bar, Dialog, ErrorText, Field, ItemArt, Photo, glassCard } from '@/components/ui'
 import { WishlistForm } from '@/components/wishlist-form'
 import {
   addOfflineGiftFn,
@@ -339,7 +339,7 @@ function OwnerItemRow({
           </button>
         </div>
         <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-200/70 text-neutral-400 dark:from-neutral-800/60 dark:to-neutral-900 dark:text-neutral-600">
-          {item.imageUrl ? <img src={item.imageUrl} alt="" className="size-full object-cover" /> : <GiftIcon />}
+          {item.imageUrl ? <Photo src={item.imageUrl} /> : <ItemArt kind={item.kind} compact />}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-baseline gap-x-2">

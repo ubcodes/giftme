@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { authMode, clerkPublishableKey, endDevSession, startDevSession } from '../auth'
 import { run } from '../db'
 import { attempt } from '../errors'
+import { siteUrl } from '../gifts'
 import { handleAvailable, normalizeHandle, requireUser, saveProfile, suggestHandle, toProfile, viewerRow } from '../users'
 
 export const getViewerFn = createServerFn({ method: 'GET' }).handler(async () => {
@@ -12,6 +13,7 @@ export const getViewerFn = createServerFn({ method: 'GET' }).handler(async () =>
     mode,
     publishableKey: mode === 'clerk' ? clerkPublishableKey() : null,
     user: row ? toProfile(row) : null,
+    siteUrl: siteUrl(),
   }
 })
 

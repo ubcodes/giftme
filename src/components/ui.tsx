@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export const glassCard =
   'border border-white/60 bg-white/60 shadow-sm shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/40'
@@ -72,6 +72,50 @@ export function GiftIcon({ size = 24 }: { size?: number }) {
       <rect x="3" y="8" width="18" height="13" rx="2" />
       <path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1s6 1 6 1zM12 8c2-4 6-4 6-1s-6 1-6 1z" />
     </svg>
+  )
+}
+
+/** An image that shimmers while it loads, then fades in. Fills its parent. */
+export function Photo({ src, alt = '', lazy = true, className = '' }: { src: string; alt?: string; lazy?: boolean; className?: string }) {
+  const [loaded, setLoaded] = useState(false)
+  const ref = useRef<HTMLImageElement>(null)
+  // A cached image can finish before React attaches onLoad.
+  useEffect(() => {
+    if (ref.current?.complete) setLoaded(true)
+  }, [src])
+  return (
+    <div className={`relative size-full ${loaded ? '' : 'shimmer'} ${className}`}>
+      <img
+        ref={ref}
+        src={src}
+        alt={alt}
+        loading={lazy ? 'lazy' : 'eager'}
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+        className={`size-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      />
+    </div>
+  )
+}
+
+/** Stands in for a missing photo: a naira mark for cash funds, a wrapped gift otherwise. */
+export function ItemArt({ kind, compact = false }: { kind: 'gift' | 'fund'; compact?: boolean }) {
+  return (
+    <div className="relative grid size-full place-items-center overflow-hidden bg-gradient-to-br from-purple-200/80 via-pink-100/80 to-blue-200/70 dark:from-purple-500/25 dark:via-pink-500/10 dark:to-blue-500/25">
+      <div aria-hidden="true" className="absolute -top-1/3 -left-1/4 size-3/4 rounded-full bg-white/50 blur-2xl dark:bg-white/5" />
+      {kind === 'fund' ? (
+        <span
+          aria-hidden="true"
+          className={`font-display relative bg-gradient-to-br from-purple-600 via-pink-500 to-blue-500 bg-clip-text leading-none text-transparent ${compact ? 'text-3xl' : 'text-7xl'}`}
+        >
+          ₦
+        </span>
+      ) : (
+        <span className="relative text-purple-500/80 dark:text-purple-300/80">
+          <GiftIcon size={compact ? 26 : 56} />
+        </span>
+      )}
+    </div>
   )
 }
 

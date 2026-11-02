@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { glassCard } from '@/components/ui'
+import { Photo, glassCard } from '@/components/ui'
 import { getDashboardFn } from '@/server/fns/owner'
 import { naira } from '@/lib/format'
 import { occasion } from '@/lib/occasions'
@@ -68,7 +68,7 @@ function Dashboard() {
               className={`group relative flex flex-col overflow-hidden rounded-2xl transition-transform hover:-translate-y-0.5 ${glassCard}`}
             >
               <div className="aspect-[16/7] w-full overflow-hidden bg-gradient-to-br from-purple-200/60 via-pink-200/50 to-blue-200/60 dark:from-purple-500/20 dark:via-pink-500/10 dark:to-blue-500/20">
-                {w.coverUrl && <img src={w.coverUrl} alt="" className="size-full object-cover" />}
+                {w.coverUrl && <Photo src={w.coverUrl} />}
               </div>
               <div className="flex flex-col gap-1 p-5">
                 <span className="text-xs text-neutral-500 dark:text-neutral-400">

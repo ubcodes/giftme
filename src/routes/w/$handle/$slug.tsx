@@ -1,13 +1,14 @@
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme'
-import { Avatar, Bar, Dialog, ErrorText, Field, GiftIcon, Glow, Logo, glassCard } from '@/components/ui'
+import { Avatar, Bar, Dialog, ErrorText, Field, Glow, ItemArt, Logo, Photo, glassCard } from '@/components/ui'
 import { contributeFn, getPublicWishlistFn, reserveFn } from '@/server/fns/guest'
 import type { PublicItem } from '@/server/gifts'
 import { countdownText, formatDate } from '@/lib/dates'
 import { naira } from '@/lib/format'
 import { occasion } from '@/lib/occasions'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/ui'
+import { shareMeta } from '@/lib/share'
 
 export const Route = createFileRoute('/w/$handle/$slug')({
   loader: async ({ params }) => {
@@ -15,18 +16,22 @@ export const Route = createFileRoute('/w/$handle/$slug')({
     if (!data.found) throw notFound()
     return data
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }) => {
     if (!loaderData?.found) return { meta: [{ title: 'Wishlist not found · GiftMe' }] }
-    const description = loaderData.wishlist.intro ?? `Contribute toward a gift for ${loaderData.owner.displayName}, or reserve one to buy yourself.`
+    const { owner, wishlist } = loaderData
+    const title = `${wishlist.title} · ${owner.displayName.split(' ')[0]}'s wishlist`
+    const description = wishlist.intro ?? `Chip in toward a gift for ${owner.displayName}, or reserve one to buy yourself.`
     return {
       meta: [
-        { title: `${loaderData.wishlist.title} · GiftMe` },
+        { title: `${wishlist.title} · GiftMe` },
         { name: 'description', content: description },
-        { property: 'og:title', content: loaderData.wishlist.title },
-        { property: 'og:description', content: description },
-        ...(loaderData.wishlist.coverUrl ?? loaderData.owner.avatarUrl
-          ? [{ property: 'og:image', content: (loaderData.wishlist.coverUrl ?? loaderData.owner.avatarUrl)! }]
-          : []),
+        ...shareMeta({
+          siteUrl: loaderData.siteUrl,
+          title,
+          description,
+          image: wishlist.coverUrl ?? owner.avatarUrl,
+          path: `/w/${params.handle}/${params.slug}`,
+        }),
       ],
     }
   },
@@ -69,7 +74,11 @@ function PublicWishlist() {
         </nav>
 
         <header className="flex flex-col gap-5 pt-14 pb-12 sm:pt-20">
-          {wishlist.coverUrl && <img src={wishlist.coverUrl} alt="" className="mb-4 aspect-[16/5] max-h-72 w-full rounded-3xl object-cover shadow-sm" />}
+          {wishlist.coverUrl && (
+            <div className="mb-4 aspect-[16/5] max-h-72 w-full overflow-hidden rounded-3xl bg-neutral-200/60 shadow-sm dark:bg-neutral-800/60">
+              <Photo src={wishlist.coverUrl} lazy={false} />
+            </div>
+          )}
           <div className="flex max-w-2xl flex-col gap-5">
             <p className="text-xs tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
               {occasion(wishlist.occasion).label}
@@ -94,7 +103,15 @@ function PublicWishlist() {
 
         <main className="grid grid-cols-1 gap-3 pb-16 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
           {items.length === 0 && (
-            <p className="col-span-full py-16 text-center text-neutral-500">{firstName} is still putting the list together. Check back soon.</p>
+            <div className={`col-span-full flex flex-col items-center gap-4 rounded-3xl px-6 py-14 text-center ${glassCard}`}>
+              <div className="size-24 overflow-hidden rounded-2xl">
+                <ItemArt kind="gift" />
+              </div>
+              <p className="font-editorial text-4xl">Gifts coming soon</p>
+              <p className="max-w-sm text-[15px] text-neutral-600 dark:text-neutral-400">
+                {firstName} is still putting the list together. Check back in a little while.
+              </p>
+            </div>
           )}
           {items.map((item, i) => (
             <ItemCard
@@ -157,13 +174,7 @@ function ItemCard({
       />
       <div className="relative flex flex-1 gap-4 p-3.5 sm:flex-col sm:gap-3 sm:p-4">
         <div className="size-20 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-200/70 sm:aspect-[16/11] sm:size-auto sm:w-full dark:from-neutral-800/60 dark:to-neutral-900">
-          {item.imageUrl ? (
-            <img src={item.imageUrl} alt="" className="size-full object-cover" loading="lazy" />
-          ) : (
-            <div className="grid size-full place-items-center text-neutral-400 dark:text-neutral-600">
-              <GiftIcon />
-            </div>
-          )}
+          {item.imageUrl ? <Photo src={item.imageUrl} /> : <ItemArt kind={item.kind} />}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-xs text-neutral-500 dark:text-neutral-400">

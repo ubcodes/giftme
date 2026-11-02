@@ -1,21 +1,21 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { attempt } from '../errors'
-import { MIN_CONTRIBUTION_NGN, publicProfile, publicWishlist, reserveItem, settleContribution, startContribution } from '../gifts'
+import { MIN_CONTRIBUTION_NGN, publicProfile, publicWishlist, reserveItem, settleContribution, siteUrl, startContribution } from '../gifts'
 import { verifyPayment } from '../paystack'
 
 export const getPublicWishlistFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ handle: z.string().max(60), slug: z.string().max(80) }))
   .handler(async ({ data }) => {
     const list = await publicWishlist(data.handle, data.slug)
-    return list ? { found: true as const, minContribution: MIN_CONTRIBUTION_NGN, ...list } : { found: false as const }
+    return list ? { found: true as const, minContribution: MIN_CONTRIBUTION_NGN, siteUrl: siteUrl(), ...list } : { found: false as const }
   })
 
 export const getPublicProfileFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ handle: z.string().max(60) }))
   .handler(async ({ data }) => {
     const profile = await publicProfile(data.handle)
-    return profile ? { found: true as const, ...profile } : { found: false as const }
+    return profile ? { found: true as const, siteUrl: siteUrl(), ...profile } : { found: false as const }
   })
 
 export const contributeFn = createServerFn({ method: 'POST' })
