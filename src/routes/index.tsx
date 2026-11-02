@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { FollowCursor } from '@/components/liquid'
+import { ProductTour } from '@/components/product-tour'
 import { ThemeToggle } from '@/components/theme'
 import { Bar, Logo, glassCard } from '@/components/ui'
 import { OCCASIONS } from '@/lib/occasions'
@@ -27,6 +28,7 @@ function Landing() {
       </div>
       <Ticker />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+        <Tour />
         <MagicLink />
         <HowItWorks />
         <Occasions />
@@ -539,6 +541,17 @@ const STEPS = [
     body: 'They chip in any amount by card, transfer or USSD, or reserve a gift to buy themselves. You get the money in your bank.',
   },
 ]
+
+function Tour() {
+  return (
+    <section id="tour" className="scroll-mt-20 flex flex-col gap-10 py-24">
+      <SectionTitle kicker="See it in action" title="From link to gift in" accent="seconds" />
+      <Reveal>
+        <ProductTour />
+      </Reveal>
+    </section>
+  )
+}
 
 function HowItWorks() {
   return (
