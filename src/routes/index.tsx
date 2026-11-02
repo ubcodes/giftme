@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { FollowCursor } from '@/components/liquid'
-import { ProductTour } from '@/components/product-tour'
+import { Stage, type SceneName } from '@/components/feature-stages'
 import { ThemeToggle } from '@/components/theme'
 import { Bar, Logo, glassCard } from '@/components/ui'
 import { OCCASIONS } from '@/lib/occasions'
@@ -28,11 +28,8 @@ function Landing() {
       </div>
       <Ticker />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
-        <Tour />
-        <MagicLink />
-        <HowItWorks />
+        <FeatureSections />
         <Occasions />
-        <Features />
         <OpenSource />
         <Faq />
         <FinalCta />
@@ -417,162 +414,189 @@ function Ticker() {
   )
 }
 
-const LINK_EXAMPLES = [
-  { url: 'jumia.com.ng/wireless-over-ear-headphones.html', title: 'Over-ear headphones', price: 45500, shop: 'Jumia', img: '/images/demo/headphones.jpg' },
-  { url: 'amazon.com/dp/B0CX23V2ZK', title: 'Instant film camera', price: 119985, shop: 'Amazon', img: '/images/demo/camera.jpg' },
-  { url: 'temu.com/high-top-sneakers-g-6010.html', title: 'High-top leather sneakers', price: 52500, shop: 'Temu', img: '/images/demo/sneakers.jpg' },
-  { url: 'shop.ng/products/glass-pour-over-coffee-maker', title: 'Glass pour-over coffee maker', price: 38000, shop: 'a small shop', img: '/images/demo/pour-over.jpg' },
+type FeatureSpec = {
+  id: string
+  scene: SceneName
+  icon: string
+  title: string
+  accent: string
+  body: React.ReactNode
+  points: { title: string; body: string }[]
+}
+
+const FEATURES: FeatureSpec[] = [
+  {
+    id: 'how',
+    scene: 'add',
+    icon: '🔗',
+    title: 'Paste a link.',
+    accent: 'That’s the whole form.',
+    body: (
+      <>
+        Found it on Jumia, Amazon, Temu or a small shop’s site? Paste the link and GiftMe fills in the <b>name, photo and price</b>. Drag
+        gifts into the order you like and star the ones you want most.
+      </>
+    ),
+    points: [
+      {
+        title: 'Any shop',
+        body: 'Big stores, small Instagram shops, or type it in by hand.',
+      },
+      {
+        title: 'Cash funds',
+        body: 'Honeymoon, school fees, a new laptop. Friends give toward a goal.',
+      },
+      {
+        title: 'Most wanted',
+        body: 'A star tells everyone which gifts matter most to you.',
+      },
+    ],
+  },
+  {
+    id: 'search',
+    scene: 'search',
+    icon: '🔍',
+    title: 'Don’t have a link?',
+    accent: 'Just say what you’d love.',
+    body: (
+      <>
+        Type “polaroid camera” and GiftMe searches shops <b>in Nigeria and abroad</b> at once. Results come back with photos and naira
+        prices. Tap one and it’s on your list.
+      </>
+    ),
+    points: [
+      {
+        title: 'Shops in Nigeria',
+        body: 'Jumia, Konga, Jiji and more, with their own prices.',
+      },
+      {
+        title: 'And abroad',
+        body: 'Amazon, Temu and others, converted to naira for you.',
+      },
+      {
+        title: 'One tap to add',
+        body: 'The photo, price and shop link all come with it.',
+      },
+    ],
+  },
+  {
+    id: 'share',
+    scene: 'share',
+    icon: '💬',
+    title: 'Share',
+    accent: 'one link.',
+    body: (
+      <>
+        Drop it in the family group, your bio or the wedding programme. It opens as a <b>rich preview with your photo</b>, and guests don’t
+        need an account.
+      </>
+    ),
+    points: [
+      {
+        title: 'Looks right in chats',
+        body: 'WhatsApp, Instagram and X show your cover and title.',
+      },
+      {
+        title: 'Countdown',
+        body: 'Everyone sees how many days are left to the big day.',
+      },
+      {
+        title: 'No sign-up for guests',
+        body: 'They open the link and give. That’s all.',
+      },
+    ],
+  },
+  {
+    id: 'give',
+    scene: 'give',
+    icon: '🎁',
+    title: 'Friends chip in,',
+    accent: 'or reserve it.',
+    body: (
+      <>
+        Guests give <b>any amount</b> by card, transfer or USSD, or reserve a gift to buy themselves so nobody buys the same blender twice.
+      </>
+    ),
+    points: [
+      {
+        title: 'Card, transfer, USSD',
+        body: 'Paid securely through Paystack.',
+      },
+      {
+        title: 'No doubles',
+        body: 'Reserved gifts show as taken for everyone else.',
+      },
+      {
+        title: 'Private by default',
+        body: 'Guests only see progress, never who gave what.',
+      },
+    ],
+  },
+  {
+    id: 'thanks',
+    scene: 'thanks',
+    icon: '💸',
+    title: 'Money lands.',
+    accent: 'Say thanks.',
+    body: (
+      <>
+        Every gift settles <b>straight to your bank</b>. You see each name, amount and sweet note, and send a thank-you in one tap.
+      </>
+    ),
+    points: [
+      {
+        title: 'Straight to your bank',
+        body: 'GiftMe never holds your money.',
+      },
+      {
+        title: 'Every note, in one place',
+        body: 'Who gave, what for, and what they said.',
+      },
+      {
+        title: 'Thank-you emails',
+        body: 'Write a few words and we deliver them.',
+      },
+    ],
+  },
 ]
 
-/** Types a shop link, then shows the card GiftMe fills in from it, for a few real examples. */
-function MagicLink() {
-  const [example, setExample] = useState(0)
-  const [typed, setTyped] = useState(0)
-  const [phase, setPhase] = useState<'typing' | 'reading' | 'done'>('typing')
-  const box = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-  const ex = LINK_EXAMPLES[example]
-
-  useEffect(() => {
-    const el = box.current
-    if (!el) return
-    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0.3 })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
-
-  useEffect(() => {
-    if (!visible) return
-    let t: ReturnType<typeof setTimeout>
-    if (phase === 'typing') {
-      t = typed < ex.url.length ? setTimeout(() => setTyped((n) => n + 1), 40) : setTimeout(() => setPhase('reading'), 350)
-    } else if (phase === 'reading') {
-      t = setTimeout(() => setPhase('done'), 1000)
-    } else {
-      t = setTimeout(() => {
-        setExample((e) => (e + 1) % LINK_EXAMPLES.length)
-        setTyped(0)
-        setPhase('typing')
-      }, 3400)
-    }
-    return () => clearTimeout(t)
-  }, [visible, phase, typed, ex.url.length])
-
+/** One feature per section: a headline, a live demo of just that feature, and three details. */
+function FeatureSections() {
   return (
-    <section className="grid grid-cols-1 items-center gap-12 py-24 lg:grid-cols-2">
-      <div className="flex flex-col gap-5">
-        <SectionTitle kicker="The magic part" title="Paste a link." accent="That's the whole form." />
-        <Reveal delay={100}>
-          <p className="max-w-md text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-400">
-            Found it on Jumia, Amazon, Temu or a small shop's website? Paste the link and GiftMe fills in the name, photo
-            and price. Or just type “drum set” and pick from shops that sell it, in Nigeria and abroad.
-          </p>
-        </Reveal>
-        <Reveal delay={150}>
-          <div className="flex flex-wrap gap-2">
-            {LINK_EXAMPLES.map((e, i) => (
-              <button
-                key={e.shop}
-                type="button"
-                onClick={() => {
-                  setExample(i)
-                  setTyped(0)
-                  setPhase('typing')
-                }}
-                className={`px-3.5 py-1.5 text-sm ${i === example ? primaryButton : secondaryButton}`}
+    <div className="flex flex-col">
+      {FEATURES.map((f) => (
+        <section
+          key={f.id}
+          id={f.id}
+          className="scroll-mt-20 flex flex-col gap-8 border-t border-neutral-200/80 py-20 first:border-t-0 sm:py-24 dark:border-neutral-800"
+        >
+          <Reveal className="flex max-w-3xl flex-col gap-4">
+            <h2 className="font-display flex flex-wrap items-baseline gap-x-3 text-4xl leading-none sm:text-5xl">
+              <span
+                aria-hidden="true"
+                className="grid size-11 translate-y-1 place-items-center self-center rounded-2xl bg-white text-2xl shadow-[0_6px_16px_-6px_rgb(88_28_135/0.35),inset_0_-3px_0_rgb(0_0_0/0.06)] dark:bg-neutral-800"
               >
-                {e.shop === 'a small shop' ? 'Any shop' : e.shop}
-              </button>
-            ))}
-          </div>
-        </Reveal>
-      </div>
-      <Reveal delay={150}>
-        <div ref={box} className="liquid rounded-3xl p-5 sm:p-6">
-          <div className="flex items-center gap-2 rounded-xl border border-white/60 bg-white/70 px-3.5 py-3 text-sm dark:border-white/10 dark:bg-neutral-900/60">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 text-neutral-400" aria-hidden="true">
-              <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
-            </svg>
-            <span className="truncate text-neutral-700 dark:text-neutral-300">
-              {ex.url.slice(0, typed)}
-              {phase === 'typing' && <span className="caret ml-px inline-block h-4 w-px translate-y-0.5 bg-purple-500" />}
-            </span>
-          </div>
-          <div className="mt-4 min-h-[124px]">
-            {phase === 'reading' && (
-              <div className="flex animate-pulse items-center gap-4 rounded-2xl border border-white/60 p-3 dark:border-white/10">
-                <div className="size-24 rounded-xl bg-neutral-200/80 dark:bg-neutral-800" />
-                <div className="flex flex-1 flex-col gap-2">
-                  <div className="h-3.5 w-4/5 rounded bg-neutral-200/80 dark:bg-neutral-800" />
-                  <div className="h-3.5 w-1/3 rounded bg-neutral-200/80 dark:bg-neutral-800" />
-                </div>
-              </div>
-            )}
-            {phase === 'done' && (
-              <div key={example} className="rise flex items-center gap-4 rounded-2xl border border-purple-300/60 bg-white/60 p-3 dark:border-purple-500/30 dark:bg-neutral-900/50">
-                <img src={ex.img} alt="" className="size-24 shrink-0 rounded-xl object-cover" />
-                <div className="flex min-w-0 flex-col gap-1">
-                  <span className="font-display text-xl leading-tight">{ex.title}</span>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                    {naira(ex.price)} · from {ex.shop}
-                  </span>
-                  <span className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">✓ Name, photo and price filled in</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </Reveal>
-    </section>
-  )
-}
-
-const STEPS = [
-  {
-    title: 'Make your list',
-    body: 'Pick the occasion, then paste product links or search for gifts. Photos and prices fill in by themselves. Add a cash fund for bigger dreams.',
-  },
-  {
-    title: 'Share one link',
-    body: "Send your list's link on WhatsApp or anywhere. Friends see what is left on each gift, never who gave what.",
-  },
-  {
-    title: 'Friends give',
-    body: 'They chip in any amount by card, transfer or USSD, or reserve a gift to buy themselves. You get the money in your bank.',
-  },
-]
-
-function Tour() {
-  return (
-    <section id="tour" className="scroll-mt-20 flex flex-col gap-10 py-24">
-      <SectionTitle kicker="See it in action" title="From link to gift in" accent="seconds" />
-      <Reveal>
-        <ProductTour />
-      </Reveal>
-    </section>
-  )
-}
-
-function HowItWorks() {
-  return (
-    <section id="how" className="scroll-mt-20 border-t border-neutral-200/80 py-24 dark:border-neutral-800">
-      <SectionTitle kicker="How it works" title="Three steps," accent="that's it" />
-      <ol className="relative mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div aria-hidden="true" className="absolute top-12 right-[16%] left-[16%] hidden h-px bg-gradient-to-r from-purple-400/0 via-pink-400/60 to-blue-400/0 md:block" />
-        {STEPS.map((s, i) => (
-          <Reveal key={s.title} delay={i * 120}>
-            <li className={`relative h-full overflow-hidden rounded-2xl p-6 transition-transform duration-300 hover:-translate-y-1 ${glassCard}`}>
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-b from-purple-500/[0.06] via-pink-500/[0.03] to-transparent dark:from-purple-500/10 dark:via-pink-500/5" />
-              <span className="font-editorial relative grid size-14 place-items-center rounded-full bg-gradient-to-br from-purple-500/15 to-pink-500/15 text-4xl text-purple-600 dark:text-purple-300">
-                {i + 1}
+                {f.icon}
               </span>
-              <h3 className="font-display relative mt-4 text-2xl">{s.title}</h3>
-              <p className="relative mt-2 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-400">{s.body}</p>
-            </li>
+              <span>{f.title}</span>
+              <span className="font-editorial text-5xl sm:text-6xl">{f.accent}</span>
+            </h2>
+            <p className="max-w-2xl text-[15px] leading-relaxed text-neutral-600 sm:text-base dark:text-neutral-400 [&_b]:font-medium [&_b]:text-neutral-900 dark:[&_b]:text-neutral-100">
+              {f.body}
+            </p>
           </Reveal>
-        ))}
-      </ol>
-    </section>
+          <Stage scene={f.scene} />
+          <ul className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {f.points.map((p) => (
+              <li key={p.title} className="flex flex-col gap-1">
+                <span className="font-medium">{p.title}</span>
+                <span className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{p.body}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
   )
 }
 
@@ -592,8 +616,7 @@ function Occasions() {
       <SectionTitle kicker="Occasions" title="For whatever you're" accent="celebrating" />
       <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {OCCASIONS.map((o, i) => (
-          <Reveal key={o.id} delay={i * 60}>
-            <a href={START_HREF} className={`group relative flex h-full flex-col gap-1 overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${glassCard}`}>
+          <a key={o.id} href={START_HREF} className={`group relative flex h-full flex-col gap-1 overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${glassCard}`}>
               <div aria-hidden="true" className={`absolute -right-10 -bottom-10 size-32 rounded-full bg-gradient-to-br opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100 ${OCCASION_TINTS[i % OCCASION_TINTS.length]}`} />
               <span className="font-display relative text-2xl leading-tight">{o.label}</span>
               <span className="relative text-sm text-neutral-500 dark:text-neutral-400">{o.blurb}</span>
@@ -601,61 +624,9 @@ function Occasions() {
                 Start one →
               </span>
             </a>
-          </Reveal>
         ))}
       </div>
     </section>
-  )
-}
-
-function Features() {
-  return (
-    <section className="border-t border-neutral-200/80 py-24 dark:border-neutral-800">
-      <SectionTitle kicker="Why GiftMe" title="Easy for you," accent="easier for them" />
-      <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-6">
-        <Reveal className="md:col-span-4">
-          <Feature title="Search as you type" body="Type what you want and see real products with photos and prices from shops in Nigeria and abroad. Tap one and it's on your list." big>
-            <div className="mt-5 flex gap-2.5 overflow-hidden">
-              {['🥁 Drum set', '🍳 Air fryer', '💻 Laptop', '📷 Camera'].map((t, i) => (
-                <span key={t} className="float rounded-full border border-neutral-200/80 bg-white/70 px-3 py-1.5 text-sm whitespace-nowrap dark:border-neutral-700 dark:bg-neutral-900/60" style={{ animationDelay: `${i * 0.6}s` }}>
-                  {t}
-                </span>
-              ))}
-            </div>
-          </Feature>
-        </Reveal>
-        <Reveal className="md:col-span-2" delay={80}>
-          <Feature title="Cash funds" body="Honeymoon, school fees, a new laptop. People give toward a goal with no fixed product." />
-        </Reveal>
-        <Reveal className="md:col-span-2" delay={120}>
-          <Feature title="Reserve a gift" body="Guests can claim a gift and buy it themselves, so nobody buys the same blender twice." />
-        </Reveal>
-        <Reveal className="md:col-span-2" delay={160}>
-          <Feature title="Private by default" body="Guests only see progress. You see every name, amount and sweet note." />
-        </Reveal>
-        <Reveal className="md:col-span-2" delay={200}>
-          <Feature title="Straight to your bank" body="Each gift settles to your own account. GiftMe never holds your money." />
-        </Reveal>
-        <Reveal className="md:col-span-3" delay={80}>
-          <Feature title="Share anywhere" body="One link for WhatsApp, Instagram or the wedding programme. A countdown shows how many days are left." />
-        </Reveal>
-        <Reveal className="md:col-span-3" delay={120}>
-          <Feature title="Say thank you" body="See who gave and send each person a thank-you note right from your dashboard." />
-        </Reveal>
-      </div>
-    </section>
-  )
-}
-
-function Feature({ title, body, big, children }: { title: string; body: string; big?: boolean; children?: React.ReactNode }) {
-  return (
-    <div className={`group relative h-full overflow-hidden rounded-2xl p-6 transition-transform duration-300 hover:-translate-y-1 ${glassCard}`}>
-      <div aria-hidden="true" className="pointer-events-none absolute -top-16 -right-16 size-40 rounded-full bg-gradient-to-br from-purple-400/20 to-pink-400/10 blur-2xl transition-transform duration-700 group-hover:scale-150" />
-      <span className="relative block h-px w-10 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500" />
-      <h3 className={`font-display relative mt-3 ${big ? 'text-3xl' : 'text-2xl'}`}>{title}</h3>
-      <p className="relative mt-2 max-w-md text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-400">{body}</p>
-      {children}
-    </div>
   )
 }
 
@@ -755,9 +726,8 @@ function Faq() {
     <section className="border-t border-neutral-200/80 py-24 dark:border-neutral-800">
       <SectionTitle kicker="Questions" title="Good to" accent="know" />
       <div className="mt-10 flex max-w-3xl flex-col gap-3">
-        {FAQ.map((f, i) => (
-          <Reveal key={f.q} delay={i * 60}>
-            <details className={`group rounded-2xl px-5 py-4 ${glassCard}`}>
+        {FAQ.map((f) => (
+            <details key={f.q} className={`group rounded-2xl px-5 py-4 ${glassCard}`}>
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[17px] [&::-webkit-details-marker]:hidden">
                 <span className="font-display text-xl">{f.q}</span>
                 <span className="grid size-7 shrink-0 place-items-center rounded-full border border-neutral-300/70 text-neutral-500 transition-transform duration-300 group-open:rotate-45 dark:border-neutral-700">
@@ -766,7 +736,6 @@ function Faq() {
               </summary>
               <p className="mt-3 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-400">{f.a}</p>
             </details>
-          </Reveal>
         ))}
       </div>
     </section>

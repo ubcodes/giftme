@@ -1,113 +1,71 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Bar, ItemArt, StarIcon } from '@/components/ui'
+import { clamp, easeInOut, prog, spring } from '@/lib/motion'
 
 /**
- * A short, looping walk-through of the real product, drawn in HTML so it stays sharp and
- * light: add a gift from a link, share it, a friend chips in, the money lands and you say
- * thanks. Plays while on screen; the step buttons jump to a scene.
+ * Live, looping demos of one feature each, drawn in HTML so they stay sharp and light.
+ * Each landing section shows one of these in a Stage. A demo starts from the top when it
+ * scrolls into view, pauses when it leaves, and shows its finished state for reduced motion.
  */
-const SCENES = [
-  { label: 'Add gifts', hint: 'Paste a link from any shop', ms: 7000 },
-  { label: 'Share one link', hint: 'WhatsApp, Instagram, anywhere', ms: 4500 },
-  { label: 'Friends chip in', hint: 'Any amount, or reserve it', ms: 5500 },
-  { label: 'Money lands, say thanks', hint: 'Straight to your bank', ms: 5000 },
-] as const
+export type SceneName = 'add' | 'search' | 'share' | 'give' | 'thanks'
 
-const URL_TEXT = 'jumia.com.ng/kenwood-stand-mixer'
+type SceneSpec = { ms: number; h: string; path: string; label: string; Scene: (p: { t: number }) => React.ReactNode }
 
-export function ProductTour() {
-  const [scene, setScene] = useState(0)
+const SCENES: Record<SceneName, SceneSpec> = {
+  add: { ms: 7600, h: 'h-[400px] sm:h-[380px]', path: 'giftme.ng/dashboard/w/wedding', label: 'A shop link turns into a gift on the list', Scene: AddGiftScene },
+  search: { ms: 9800, h: 'h-[440px]', path: 'giftme.ng/dashboard/w/wedding', label: 'Searching shops and adding a result', Scene: SearchScene },
+  share: { ms: 5600, h: 'h-[460px] sm:h-[380px]', path: 'giftme.ng/dashboard/w/wedding', label: 'Sharing the wishlist link in a chat', Scene: ShareScene },
+  give: { ms: 6200, h: 'h-[560px] sm:h-[400px]', path: 'giftme.ng/w/amaka/wedding', label: 'A friend chips in toward a gift', Scene: GiveScene },
+  thanks: { ms: 5800, h: 'h-[440px] sm:h-[400px]', path: 'giftme.ng/dashboard/w/wedding', label: 'The gift lands and a thank-you goes out', Scene: ThanksScene },
+}
+
+function useStageClock(ms: number) {
+  const box = useRef<HTMLDivElement>(null)
   const [t, setT] = useState(0)
   const [visible, setVisible] = useState(false)
   const [still, setStill] = useState(false)
-  const box = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setStill(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     const el = box.current
     if (!el) return
-    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0.35 })
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), {
+      threshold: 0.3,
+    })
     io.observe(el)
     return () => io.disconnect()
   }, [])
 
-  // One clock drives every scene; it only runs while the tour is on screen.
-  const elapsed = useRef(0)
   useEffect(() => {
     if (!visible || still) return
-    let last = performance.now()
+    // Start from the top every time the stage comes into view, so nobody walks in mid-story.
+    const start = performance.now()
     let frame = 0
     const tick = (now: number) => {
-      elapsed.current += now - last
-      last = now
-      if (elapsed.current >= SCENES[scene].ms) {
-        elapsed.current = 0
-        setScene((scene + 1) % SCENES.length)
-      }
-      setT(elapsed.current)
+      setT((now - start) % ms)
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [visible, still, scene])
+  }, [visible, still, ms])
 
-  // With reduced motion each scene shows its finished state.
-  const time = still ? 99999 : t
-  const jump = (i: number) => {
-    elapsed.current = 0
-    setScene(i)
-    setT(0)
-  }
+  return { box, t: still ? ms - 400 : t }
+}
 
+/** A warm canvas with an app window inside, playing one feature's demo. */
+export function Stage({ scene }: { scene: SceneName }) {
+  const { ms, h, path, label, Scene } = SCENES[scene]
+  const { box, t } = useStageClock(ms)
   return (
-    <div ref={box} className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr] lg:gap-10">
-      <ol className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
-        {SCENES.map((s, i) => (
-          <li key={s.label} className="shrink-0">
-            <button
-              type="button"
-              onClick={() => jump(i)}
-              data-cursor="Show me"
-              aria-current={i === scene}
-              className={`group relative flex w-full cursor-pointer flex-col items-start gap-0.5 overflow-hidden rounded-2xl px-4 py-3 text-left transition-colors ${
-                i === scene ? 'bg-white/70 shadow-sm dark:bg-white/10' : 'hover:bg-white/40 dark:hover:bg-white/5'
-              }`}
-            >
-              <span className="flex items-center gap-2 text-[15px]">
-                <span
-                  className={`grid size-6 place-items-center rounded-full text-[11px] transition-colors ${
-                    i === scene ? 'bg-purple-500 text-white' : 'bg-neutral-900/5 text-neutral-500 dark:bg-white/10 dark:text-neutral-400'
-                  }`}
-                >
-                  {i + 1}
-                </span>
-                <span className="whitespace-nowrap">{s.label}</span>
-              </span>
-              <span className="hidden pl-8 text-xs text-neutral-500 lg:block dark:text-neutral-400">{s.hint}</span>
-              {i === scene && !still && (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500"
-                  style={{ transform: `scaleX(${Math.min(1, t / s.ms)})` }}
-                />
-              )}
-            </button>
-          </li>
-        ))}
-      </ol>
-
-      <div className="relative min-w-0">
-        <div aria-hidden="true" className="absolute -inset-6 -z-10 rounded-[40px] bg-gradient-to-br from-purple-300/30 via-pink-300/20 to-blue-300/30 blur-2xl dark:from-purple-500/15 dark:via-pink-500/10 dark:to-blue-500/15" />
-        <div className="overflow-hidden rounded-2xl border border-white/70 bg-white/70 shadow-2xl shadow-purple-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/70">
-          <BrowserBar scene={scene} />
-          <div className="relative h-[400px] sm:h-[420px]" aria-live="polite">
-            <span className="sr-only">{`Step ${scene + 1}: ${SCENES[scene].label}`}</span>
-            <div key={scene} className="word-in absolute inset-0 p-4 sm:p-6">
-              {scene === 0 && <AddGiftScene t={time} />}
-              {scene === 1 && <ShareScene t={time} />}
-              {scene === 2 && <GiveScene t={time} />}
-              {scene === 3 && <ThanksScene t={time} />}
-            </div>
+    <div
+      ref={box}
+      className="relative overflow-hidden rounded-[28px] border border-neutral-200/70 bg-gradient-to-br from-[#f6efe6] via-[#f3eaf3] to-[#e9eefb] px-3 pt-6 sm:px-10 sm:pt-10 dark:border-neutral-800 dark:from-neutral-900 dark:via-[#1a1422] dark:to-[#111827]"
+    >
+      <div className="mx-auto max-w-3xl overflow-hidden rounded-t-2xl border border-b-0 border-white/80 bg-white/85 shadow-[0_30px_80px_-20px_rgb(88_28_135/0.25)] backdrop-blur-xl dark:border-white/10 dark:bg-neutral-950/80">
+        <BrowserBar path={path} />
+        <div className={`relative overflow-hidden ${h}`} role="img" aria-label={label}>
+          <div className="absolute inset-0 p-4 sm:p-6">
+            <Scene t={t} />
           </div>
         </div>
       </div>
@@ -115,8 +73,7 @@ export function ProductTour() {
   )
 }
 
-function BrowserBar({ scene }: { scene: number }) {
-  const path = scene === 2 ? 'giftme.ng/w/amaka/wedding' : scene === 1 ? 'giftme.ng/dashboard/w/wedding' : 'giftme.ng/dashboard'
+function BrowserBar({ path }: { path: string }) {
   return (
     <div className="flex items-center gap-3 border-b border-neutral-200/70 px-4 py-2.5 dark:border-neutral-800">
       <span className="flex gap-1.5" aria-hidden="true">
@@ -130,6 +87,8 @@ function BrowserBar({ scene }: { scene: number }) {
     </div>
   )
 }
+
+const URL_TEXT = 'jumia.com.ng/kenwood-stand-mixer'
 
 function Cursor({ x, y, name, click }: { x: number; y: number; name: string; click?: boolean }) {
   return (
@@ -231,7 +190,7 @@ function AddGiftScene({ t }: { t: number }) {
         })}
       </ul>
       <Cursor
-        name="You"
+        name="Amaka"
         x={!filled ? 120 : !saved ? 420 : !moved ? 160 : 470}
         y={!filled ? 80 : !saved ? 140 : !moved ? 220 : 90}
         click={t > 2900 && t < 3400}
@@ -281,7 +240,7 @@ function ShareScene({ t }: { t: number }) {
           </div>
         )}
       </div>
-      <Cursor name="You" x={copied ? 300 : 110} y={copied ? 330 : 150} click={t > 900 && t < 1400} />
+      <Cursor name="Amaka" x={copied ? 300 : 110} y={copied ? 330 : 150} click={t > 900 && t < 1400} />
     </div>
   )
 }
@@ -412,7 +371,306 @@ function ThanksScene({ t }: { t: number }) {
           </div>
         )}
       </div>
-      <Cursor name="You" x={thanked ? 470 : 300} y={thanked ? 110 : 260} click={t > 2700 && t < 3100} />
+      <Cursor name="Amaka" x={thanked ? 470 : 300} y={thanked ? 110 : 260} click={t > 2700 && t < 3100} />
+    </div>
+  )
+}
+
+type Result = { title: string; price: number; shop: string; domain: string }
+const SEARCHES: {
+  query: string
+  img: string
+  pick: number
+  results: Result[]
+}[] = [
+  {
+    query: 'polaroid camera',
+    img: '/images/demo/camera.jpg',
+    pick: 2,
+    results: [
+      {
+        title: 'Polaroid instant camera',
+        price: 119985,
+        shop: 'Jumia',
+        domain: 'jumia.com.ng',
+      },
+      {
+        title: 'Polaroid instant camera',
+        price: 124500,
+        shop: 'Konga',
+        domain: 'konga.com',
+      },
+      {
+        title: 'Polaroid Spirit 600',
+        price: 96000,
+        shop: 'Jiji',
+        domain: 'jiji.ng',
+      },
+      {
+        title: 'Polaroid instant camera',
+        price: 98300,
+        shop: 'Amazon',
+        domain: 'amazon.com',
+      },
+      {
+        title: 'Vintage Polaroid 600',
+        price: 104700,
+        shop: 'eBay',
+        domain: 'ebay.com',
+      },
+      {
+        title: 'Instant film camera',
+        price: 89900,
+        shop: 'Walmart',
+        domain: 'walmart.com',
+      },
+    ],
+  },
+  {
+    query: 'wireless headphones',
+    img: '/images/demo/headphones.jpg',
+    pick: 0,
+    results: [
+      {
+        title: 'Over-ear wireless headphones',
+        price: 45500,
+        shop: 'Jumia',
+        domain: 'jumia.com.ng',
+      },
+      {
+        title: 'Bluetooth headphones',
+        price: 48000,
+        shop: 'Konga',
+        domain: 'konga.com',
+      },
+      {
+        title: 'Wireless headset',
+        price: 52999,
+        shop: 'Slot',
+        domain: 'slot.ng',
+      },
+      {
+        title: 'Over-ear headphones',
+        price: 41200,
+        shop: 'Amazon',
+        domain: 'amazon.com',
+      },
+      {
+        title: 'Foldable headphones',
+        price: 28600,
+        shop: 'Temu',
+        domain: 'temu.com',
+      },
+      {
+        title: 'Noise-cancelling headphones',
+        price: 47900,
+        shop: 'Best Buy',
+        domain: 'bestbuy.com',
+      },
+    ],
+  },
+]
+const SEARCH_LEN = 4.9
+
+/**
+ * Type what you want and results from shops in Nigeria and abroad burst out of the search
+ * box, land in place, and the picked one flies onto the wishlist.
+ */
+function SearchScene({ t }: { t: number }) {
+  const s = t / 1000
+  const round = Math.floor(s / SEARCH_LEN) % SEARCHES.length
+  const u = s % SEARCH_LEN
+  const { query, img, pick, results } = SEARCHES[round]
+
+  const root = useRef<HTMLDivElement>(null)
+  const input = useRef<HTMLDivElement>(null)
+  const pill = useRef<HTMLSpanElement>(null)
+  const cards = useRef<(HTMLDivElement | null)[]>([])
+  const [geo, setGeo] = useState<{
+    fromInput: { x: number; y: number }[]
+    toPill: { x: number; y: number }[]
+    centers: { x: number; y: number }[]
+    inputAt: { x: number; y: number }
+  } | null>(null)
+
+  // Where each card sits relative to the search box and the wishlist pill, for the flights.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const r = root.current?.getBoundingClientRect()
+      const i = input.current?.getBoundingClientRect()
+      const p = pill.current?.getBoundingClientRect()
+      if (!r || !i || !p) return
+      const mid = (b: DOMRect) => ({
+        x: b.left + b.width / 2,
+        y: b.top + b.height / 2,
+      })
+      const boxes = cards.current.map((c) => c?.getBoundingClientRect()).filter(Boolean) as DOMRect[]
+      const im = mid(i)
+      const pm = mid(p)
+      setGeo({
+        fromInput: boxes.map((b) => ({
+          x: im.x - mid(b).x,
+          y: im.y - mid(b).y,
+        })),
+        toPill: boxes.map((b) => ({ x: pm.x - mid(b).x, y: pm.y - mid(b).y })),
+        centers: boxes.map((b) => ({
+          x: mid(b).x - r.left,
+          y: mid(b).y - r.top,
+        })),
+        inputAt: {
+          x: i.left - r.left + 40 + Math.min(query.length, 20) * 7,
+          y: im.y - r.top + 6,
+        },
+      })
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [query])
+
+  const typed = query.slice(0, Math.max(0, Math.floor((u - 0.2) * 18)))
+  const searching = u > 1.15 && u < 1.45
+  const burstAt = 1.4
+  const clickAt = 3.05
+  const added = u > 3.95
+  const count = 3 + round + (added ? 1 : 0)
+  const bump = added ? 1 + 0.18 * Math.sin(Math.min(1, (u - 3.95) / 0.35) * Math.PI) : 1
+  const exit = prog(u, 4.45, 4.8)
+
+  const cursor = !geo
+    ? { x: 160, y: 120 }
+    : u < 2.35
+      ? geo.inputAt
+      : u < 3.5
+        ? geo.centers[pick]
+        : { x: geo.centers[pick].x + 30, y: geo.centers[pick].y + 60 }
+
+  return (
+    <div ref={root} className="relative flex h-full flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <p className="font-display text-2xl">Add a gift</p>
+        <span
+          ref={pill}
+          className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/15 px-3 py-1 text-xs text-purple-800 tabular-nums dark:text-purple-200"
+          style={{ transform: `scale(${bump})` }}
+        >
+          🎁 Wishlist · {count} gifts
+        </span>
+      </div>
+
+      <div
+        ref={input}
+        className="flex items-center gap-2 rounded-xl border border-purple-300/70 bg-white px-3 py-2.5 text-[13px] shadow-sm dark:border-purple-500/40 dark:bg-neutral-950"
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          className="shrink-0 text-neutral-400"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
+        <span className="truncate">
+          {typed}
+          {u < 1.3 && <span className="caret ml-px inline-block h-3.5 w-px translate-y-0.5 bg-purple-500" />}
+        </span>
+        <span className="ml-auto shrink-0 text-[11px] text-neutral-400">
+          {searching ? 'Searching shops…' : added ? (
+            <span className="word-in inline-block text-emerald-600 dark:text-emerald-400">✓ Added from {results[pick].shop}</span>
+          ) : u > burstAt ? (
+            '6 results'
+          ) : (
+            ''
+          )}
+        </span>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        {[0, 1].map((row) => (
+          <div key={row} className="flex flex-col gap-1.5">
+            <p
+              className="text-[10px] tracking-[0.14em] text-neutral-500 uppercase"
+              style={{
+                opacity: clamp((u - burstAt - row * 0.15) * 4) * (1 - exit),
+              }}
+            >
+              {row === 0 ? 'Sold in Nigeria' : 'International shops'}
+              {row === 1 && <span className="tracking-normal normal-case"> · prices in naira</span>}
+            </p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {results.slice(row * 3, row * 3 + 3).map((r, k) => {
+                const i = row * 3 + k
+                const from = geo?.fromInput[i] ?? { x: 0, y: -120 }
+                const p = spring(u - burstAt - i * 0.07, 190, 19)
+                const isPick = i === pick
+                const fly = isPick ? easeInOut(prog(u, 3.4, 3.95)) : 0
+                const to = geo?.toPill[i] ?? { x: 0, y: 0 }
+                const press = isPick && u > clickAt && u < clickAt + 0.18 ? 0.95 : 1
+                const x = from.x * (1 - p) + to.x * fly
+                const y = from.y * (1 - p) + to.y * fly + (isPick ? 0 : exit * 14)
+                const scale = (0.25 + 0.75 * p) * (1 - 0.82 * fly) * press
+                const rot = (i % 2 ? -1 : 1) * (10 + i * 3) * (1 - p)
+                const opacity = clamp(p * 3) * (isPick ? 1 - prog(u, 3.85, 3.97) : 1 - exit)
+                return (
+                  // The slot keeps the untransformed layout box, so measuring it gives each card's resting place.
+                  <div
+                    key={`${round}-${i}`}
+                    ref={(el) => {
+                      cards.current[i] = el
+                    }}
+                  >
+                    <div
+                      className={`relative overflow-hidden rounded-xl border bg-white text-left dark:bg-neutral-900 ${
+                        isPick && u > clickAt - 0.25
+                          ? 'border-purple-400 shadow-lg shadow-purple-500/20'
+                          : 'border-neutral-200/80 dark:border-neutral-800'
+                      }`}
+                      style={{
+                        transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`,
+                        opacity,
+                        zIndex: isPick ? 2 : 1,
+                      }}
+                    >
+                      <div className="relative h-12 bg-white sm:h-16">
+                        <img
+                          src={img}
+                          alt=""
+                          className="size-full object-cover"
+                          style={{
+                            objectPosition: `${30 + k * 20}% ${40 + row * 15}%`,
+                          }}
+                        />
+                        <span
+                          className="absolute top-1 left-1 rounded-full bg-neutral-900/80 px-1.5 py-0.5 text-[9px] text-white"
+                          style={{ opacity: 1 - clamp((p - 0.6) * 4) }}
+                        >
+                          {r.domain}
+                        </span>
+                      </div>
+                      <div className="flex flex-col p-1.5 sm:p-2">
+                        <span className="truncate text-[11px] leading-snug sm:text-xs">{r.title}</span>
+                        <span className="text-[11px] tabular-nums sm:text-xs">₦{r.price.toLocaleString()}</span>
+                        <span className="truncate text-[10px] text-neutral-500">{r.shop}</span>
+                      </div>
+                      {isPick && u > clickAt && (
+                        <span className="absolute inset-0 grid place-items-center bg-purple-500/85 text-[11px] text-white">Added ✓</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Cursor name="Amaka" x={cursor.x} y={cursor.y} click={u > clickAt && u < clickAt + 0.45} />
     </div>
   )
 }
