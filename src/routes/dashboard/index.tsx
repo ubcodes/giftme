@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import { GettingStarted } from '@/components/onboarding'
 import { Photo, glassCard } from '@/components/ui'
 import { getDashboardFn } from '@/server/fns/owner'
 import { naira } from '@/lib/format'
@@ -34,19 +35,12 @@ function Dashboard() {
         </Link>
       </header>
 
-      {!user.bank && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-purple-300/50 bg-purple-500/10 p-5 sm:flex-row sm:items-center sm:justify-between dark:border-purple-600/40">
-          <div>
-            <p className="font-display text-2xl">Add your bank account to receive gifts</p>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              Every contribution goes straight to your account. Until then, friends can still reserve gifts.
-            </p>
-          </div>
-          <Link to="/dashboard/settings" hash="payouts" className={`inline-flex min-h-10 shrink-0 items-center px-4 text-sm ${primaryButton}`}>
-            Add bank account
-          </Link>
-        </div>
-      )}
+      <GettingStarted
+        hasPhoto={!!user.avatarUrl}
+        firstWishlistId={(wishlists.find((w) => w.items === 0) ?? wishlists[0])?.id ?? null}
+        hasGift={wishlists.some((w) => w.items > 0)}
+        hasBank={!!user.bank}
+      />
 
       {wishlists.length === 0 ? (
         <div className={`flex flex-col items-center gap-4 rounded-3xl px-6 py-16 text-center ${glassCard}`}>

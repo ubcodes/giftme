@@ -5,6 +5,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities'
 import { z } from 'zod'
 import { AddFundDialog, AddGiftDialog, EditItemDialog } from '@/components/item-editor'
+import { BankNeededNotice } from '@/components/onboarding'
 import { ShareButtons } from '@/components/share'
 import { Bar, Dialog, ErrorText, Field, ItemArt, Photo, StarIcon, glassCard } from '@/components/ui'
 import { WishlistForm } from '@/components/wishlist-form'
@@ -138,16 +139,8 @@ function Editor() {
         <div className={`flex flex-col gap-3 rounded-2xl p-5 ${glassCard}`}>
           <p className="font-display text-2xl">Share your wishlist</p>
           <ShareButtons url={shareUrl} title={wishlist.title} />
-          {!user.bank && (
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              Guests can only contribute money once you{' '}
-              <Link to="/dashboard/settings" hash="payouts" className="underline underline-offset-4">
-                add your bank account
-              </Link>
-              .
-            </p>
-          )}
         </div>
+        {!user.bank && <BankNeededNotice />}
       </header>
 
       <section className="flex flex-col gap-4">

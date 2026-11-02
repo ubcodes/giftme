@@ -1,5 +1,6 @@
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
+import { BankNeededNotice } from '@/components/onboarding'
 import { ThemeToggle } from '@/components/theme'
 import { Avatar, Bar, Dialog, ErrorText, Field, Glow, ItemArt, Logo, Photo, StarIcon, glassCard } from '@/components/ui'
 import { contributeFn, getPublicWishlistFn, reserveFn } from '@/server/fns/guest'
@@ -53,6 +54,7 @@ function NotFound() {
 
 function PublicWishlist() {
   const data = Route.useLoaderData()
+  const { viewer } = Route.useRouteContext()
   const [dialog, setDialog] = useState<{ kind: 'contribute' | 'reserve'; item: PublicItem } | null>(null)
   if (!data.found) return null
   const { owner, wishlist, items, minContribution, acceptsMoney } = data
@@ -60,6 +62,8 @@ function PublicWishlist() {
   const complete = gifts.filter((i) => i.state !== 'open').length
   const countdown = wishlist.eventDate ? countdownText(wishlist.eventDate) : null
   const firstName = owner.displayName.split(' ')[0]
+  // Only the owner sees why there's no Contribute button; guests just see Reserve.
+  const ownerWithoutBank = !acceptsMoney && viewer?.user?.handle === owner.handle
 
   return (
     <div className="relative min-h-screen overflow-x-clip">
@@ -100,6 +104,13 @@ function PublicWishlist() {
             )}
           </div>
         </header>
+
+        {ownerWithoutBank && (
+          <div className="mb-6">
+            <BankNeededNotice compact />
+            <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">Only you can see this note.</p>
+          </div>
+        )}
 
         <main className="grid grid-cols-1 gap-3 pb-16 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
           {items.length === 0 && (
