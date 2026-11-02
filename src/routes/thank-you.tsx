@@ -2,6 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { Glow } from '@/components/ui'
+import { primaryButton } from '@/lib/ui'
 import { confirmPaymentFn } from '@/server/fns/guest'
 
 export const Route = createFileRoute('/thank-you')({
@@ -54,9 +55,12 @@ function ThankYou() {
         <a href={back} className="mt-4 text-sm underline underline-offset-4">
           Back to the wishlist
         </a>
-        <Link to="/" className="text-xs text-neutral-500 underline-offset-4 hover:underline">
-          Make your own wishlist with GiftMe
-        </Link>
+        <div className="mt-8 flex flex-col items-center gap-3 border-t border-neutral-200 pt-8 dark:border-neutral-800">
+          <p className="text-sm text-neutral-500">Have a birthday, wedding or big day coming up?</p>
+          <Link to="/" className={`inline-flex min-h-11 items-center px-5 text-[15px] ${primaryButton}`}>
+            Make your own wishlist →
+          </Link>
+        </div>
       </main>
     </div>
   )
