@@ -27,6 +27,9 @@ function DashboardLayout() {
               <Link to="/dashboard" activeOptions={{ exact: true }} activeProps={{ className: 'text-neutral-900 dark:text-neutral-100' }}>
                 Wishlists
               </Link>
+              <Link to="/dashboard/friends" activeProps={{ className: 'text-neutral-900 dark:text-neutral-100' }}>
+                Friends
+              </Link>
               <Link to="/dashboard/settings" activeProps={{ className: 'text-neutral-900 dark:text-neutral-100' }}>
                 Settings
               </Link>
@@ -74,6 +77,9 @@ function AccountMenu() {
           <MenuLink to="/dashboard" onClick={() => setOpen(false)}>
             Wishlists
           </MenuLink>
+          <MenuLink to="/dashboard/friends" onClick={() => setOpen(false)}>
+            Friends
+          </MenuLink>
           <MenuLink to="/dashboard/settings" onClick={() => setOpen(false)}>
             Profile & payouts
           </MenuLink>
@@ -90,7 +96,7 @@ function AccountMenu() {
   )
 }
 
-function MenuLink({ to, onClick, children }: { to: '/dashboard' | '/dashboard/settings'; onClick: () => void; children: React.ReactNode }) {
+function MenuLink({ to, onClick, children }: { to: '/dashboard' | '/dashboard/friends' | '/dashboard/settings'; onClick: () => void; children: React.ReactNode }) {
   return (
     <Link to={to} onClick={onClick} className="block rounded-lg px-3 py-2 hover:bg-neutral-900/5 dark:hover:bg-neutral-100/5">
       {children}

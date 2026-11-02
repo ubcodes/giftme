@@ -558,6 +558,24 @@ const FEATURES: FeatureSpec[] = [
       },
     ],
   },
+  {
+    id: 'friends',
+    scene: 'friends',
+    icon: '👋',
+    title: 'Find your',
+    accent: 'people.',
+    body: (
+      <>
+        See which of your contacts are already on GiftMe, follow them, and see <b>whose birthday, wedding or big day is next</b>. Search by
+        their Instagram, TikTok, X or Substack handle too.
+      </>
+    ),
+    points: [
+      { title: 'From your phone', body: 'Numbers are scrambled on your phone before we check, and never kept.' },
+      { title: 'Your socials, linked', body: 'Add your handles so friends can find you and see your wishlists.' },
+      { title: 'Only if you want', body: 'You choose whether friends can find you. Amounts always stay private.' },
+    ],
+  },
 ]
 
 /** One feature per section: a headline, a live demo of just that feature, and three details. */

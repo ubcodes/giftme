@@ -107,6 +107,23 @@ export function initDb() {
 const MIGRATIONS = [
   `ALTER TABLE items ADD COLUMN money_enabled INTEGER NOT NULL DEFAULT 1`,
   `ALTER TABLE items ADD COLUMN most_wanted INTEGER NOT NULL DEFAULT 0`,
+  // Finding friends: contact details are matched by hash, and only for people who opt in.
+  `ALTER TABLE users ADD COLUMN phone TEXT`,
+  `ALTER TABLE users ADD COLUMN phone_hash TEXT`,
+  `ALTER TABLE users ADD COLUMN email_hash TEXT`,
+  `ALTER TABLE users ADD COLUMN discoverable INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN instagram TEXT`,
+  `ALTER TABLE users ADD COLUMN tiktok TEXT`,
+  `ALTER TABLE users ADD COLUMN x_handle TEXT`,
+  `ALTER TABLE users ADD COLUMN substack TEXT`,
+  `CREATE TABLE IF NOT EXISTS follows (
+     follower_id TEXT NOT NULL,
+     followee_id TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     PRIMARY KEY (follower_id, followee_id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_users_phone_hash ON users(phone_hash)`,
+  `CREATE INDEX IF NOT EXISTS idx_users_email_hash ON users(email_hash)`,
 ]
 
 async function migrate() {

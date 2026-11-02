@@ -1,6 +1,7 @@
 import { currentUserId, identityFor } from './auth'
 import { one, run } from './db'
 import { UserError } from './errors'
+import { cleanSocialHandle, hashContact, normalizeEmail, normalizePhone, type Socials } from '@/lib/contacts'
 
 export type Profile = {
   id: string
@@ -9,9 +10,12 @@ export type Profile = {
   handle: string | null
   avatarUrl: string | null
   bank: { bankName: string; last4: string; accountName: string } | null
+  phone: string | null
+  discoverable: boolean
+  socials: Socials
 }
 
-type UserRow = {
+export type UserRow = {
   id: string
   email: string | null
   display_name: string
@@ -22,6 +26,23 @@ type UserRow = {
   bank_name: string | null
   account_last4: string | null
   account_name: string | null
+  phone: string | null
+  phone_hash: string | null
+  email_hash: string | null
+  discoverable: number
+  instagram: string | null
+  tiktok: string | null
+  x_handle: string | null
+  substack: string | null
+}
+
+export function socialsOf(row: Pick<UserRow, 'instagram' | 'tiktok' | 'x_handle' | 'substack'>): Socials {
+  const s: Socials = {}
+  if (row.instagram) s.instagram = row.instagram
+  if (row.tiktok) s.tiktok = row.tiktok
+  if (row.x_handle) s.x = row.x_handle
+  if (row.substack) s.substack = row.substack
+  return s
 }
 
 export function toProfile(row: UserRow): Profile {
@@ -35,6 +56,9 @@ export function toProfile(row: UserRow): Profile {
       row.paystack_subaccount && row.bank_name
         ? { bankName: row.bank_name, last4: row.account_last4 ?? '', accountName: row.account_name ?? '' }
         : null,
+    phone: row.phone,
+    discoverable: !!row.discoverable,
+    socials: socialsOf(row),
   }
 }
 
@@ -114,4 +138,33 @@ export async function saveProfile(userId: string, input: { displayName: string; 
     input.avatarUrl,
     userId,
   ])
+}
+
+/** Phone, social handles and whether friends can find this person. */
+export async function saveFindability(
+  userId: string,
+  input: { phone: string; discoverable: boolean; instagram: string; tiktok: string; x: string; substack: string },
+) {
+  const phone = input.phone.trim() ? normalizePhone(input.phone) : null
+  if (input.phone.trim() && !phone) throw new UserError('That phone number doesn’t look right. Try it with the country code, like +234…')
+  await run(
+    `UPDATE users SET phone = ?, phone_hash = ?, discoverable = ?, instagram = ?, tiktok = ?, x_handle = ?, substack = ? WHERE id = ?`,
+    [
+      phone,
+      phone ? await hashContact(phone) : null,
+      input.discoverable ? 1 : 0,
+      cleanSocialHandle('instagram', input.instagram),
+      cleanSocialHandle('tiktok', input.tiktok),
+      cleanSocialHandle('x', input.x),
+      cleanSocialHandle('substack', input.substack),
+      userId,
+    ],
+  )
+}
+
+/** Email hashes are filled in lazily, so contacts can match people who signed up before this existed. */
+export async function ensureEmailHash(row: Pick<UserRow, 'id' | 'email' | 'email_hash'>) {
+  if (row.email_hash || !row.email) return
+  const email = normalizeEmail(row.email)
+  if (email) await run('UPDATE users SET email_hash = ? WHERE id = ?', [await hashContact(email), row.id])
 }

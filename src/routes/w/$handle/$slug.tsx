@@ -1,6 +1,7 @@
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { BankNeededNotice } from '@/components/onboarding'
+import { SocialLinks } from '@/components/friends'
 import { ThemeToggle } from '@/components/theme'
 import { Avatar, Bar, Dialog, ErrorText, Field, Glow, ItemArt, Logo, Photo, StarIcon, glassCard } from '@/components/ui'
 import { contributeFn, getPublicWishlistFn, reserveFn } from '@/server/fns/guest'
@@ -74,7 +75,10 @@ function PublicWishlist() {
             <Avatar src={owner.avatarUrl} name={owner.displayName} size={44} />
             <span className="text-sm text-neutral-600 dark:text-neutral-400">{owner.displayName}</span>
           </Link>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <SocialLinks socials={owner.socials} className="hidden sm:flex" />
+            <ThemeToggle />
+          </div>
         </nav>
 
         <header className="flex flex-col gap-5 pt-14 pb-12 sm:pt-20">

@@ -86,7 +86,7 @@ export function FollowCursor() {
       <svg width="20" height="20" viewBox="0 0 24 24" className={`drop-shadow-md transition-transform duration-150 ${over ? 'scale-90' : ''}`} style={{ transformOrigin: '4px 3px' }}>
         <path d="M4 3l7 17 2.5-7.5L21 10z" fill="#a855f7" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
       </svg>
-      <span className="absolute top-4 left-4 rounded-full rounded-tl-sm bg-purple-500 px-2 py-0.5 text-[11px] whitespace-nowrap text-white shadow">
+      <span className="absolute top-3 left-3 rounded-full rounded-tl-sm bg-purple-500 px-2 py-0.5 text-[11px] whitespace-nowrap text-white shadow">
         {label ?? 'You'}
       </span>
     </div>

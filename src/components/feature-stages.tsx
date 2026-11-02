@@ -7,7 +7,7 @@ import { clamp, easeInOut, prog, spring } from '@/lib/motion'
  * Each landing section shows one of these in a Stage. A demo starts from the top when it
  * scrolls into view, pauses when it leaves, and shows its finished state for reduced motion.
  */
-export type SceneName = 'add' | 'search' | 'share' | 'give' | 'thanks'
+export type SceneName = 'add' | 'search' | 'share' | 'give' | 'thanks' | 'friends'
 
 type SceneSpec = { ms: number; h: string; path: string; label: string; Scene: (p: { t: number }) => React.ReactNode }
 
@@ -16,6 +16,7 @@ const SCENES: Record<SceneName, SceneSpec> = {
   search: { ms: 9800, h: 'h-[440px]', path: 'giftme.ng/dashboard/w/wedding', label: 'Searching shops and adding a result', Scene: SearchScene },
   share: { ms: 5600, h: 'h-[460px] sm:h-[380px]', path: 'giftme.ng/dashboard/w/wedding', label: 'Sharing the wishlist link in a chat', Scene: ShareScene },
   give: { ms: 6200, h: 'h-[560px] sm:h-[400px]', path: 'giftme.ng/w/amaka/wedding', label: 'A friend chips in toward a gift', Scene: GiveScene },
+  friends: { ms: 7200, h: 'h-[470px] sm:h-[420px]', path: 'giftme.ng/dashboard/friends', label: 'Finding friends from your contacts and following one', Scene: FriendsScene },
   thanks: { ms: 5800, h: 'h-[440px] sm:h-[400px]', path: 'giftme.ng/dashboard/w/wedding', label: 'The gift lands and a thank-you goes out', Scene: ThanksScene },
 }
 
@@ -672,5 +673,125 @@ function SearchScene({ t }: { t: number }) {
 
       <Cursor name="Amaka" x={cursor.x} y={cursor.y} click={u > clickAt && u < clickAt + 0.45} />
     </div>
+  )
+}
+
+const CONTACTS = ['Aunty Ngozi', 'Bayo', 'Chioma A.', 'Dami', 'Ife Okafor', 'Kemi Adeyemi', 'Mummy ❤️', 'Tunde Bakare']
+const FOUND = [
+  { name: 'Tunde Bakare', handle: 'tunde', list: 'Tunde’s 30th', when: 'Birthday · 18 days to go', tint: 'from-amber-200 to-rose-200', social: 'instagram' as const },
+  { name: 'Kemi Adeyemi', handle: 'kemi', list: 'Baby Adeyemi is coming', when: 'Baby shower · 74 days', tint: 'from-sky-200 to-violet-200', social: 'tiktok' as const },
+  { name: 'Ife Okafor', handle: 'ife', list: 'Ife’s graduation', when: 'Graduation · 30 days', tint: 'from-emerald-200 to-sky-200', social: 'x' as const },
+]
+
+/** Pick contacts, see who's on GiftMe with their next celebration, follow one. */
+function FriendsScene({ t }: { t: number }) {
+  const s = t / 1000
+  const picking = s > 0.95 && s < 2.45
+  const found = s > 2.5
+  const followed = s > 4.3
+  const ticked = Math.floor(prog(s, 1.25, 2.1) * CONTACTS.length)
+  // The Follow buttons sit on the right edge, so aim at them from the stage's real width.
+  const root = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(560)
+  useLayoutEffect(() => {
+    const measure = () => root.current && setWidth(root.current.offsetWidth)
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+  const cursor = s < 0.6 ? { x: width * 0.55, y: 260 } : s < 2.4 ? (s < 1.5 ? { x: 92, y: 124 } : { x: 200, y: 210 }) : s < 3.7 ? { x: width * 0.6, y: 300 } : { x: width - 34, y: 112 }
+  return (
+    <div ref={root} className="relative flex h-full flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-display text-2xl">
+          Find your <span className="font-editorial text-3xl">people</span>
+        </p>
+        {followed && (
+          <span className="word-in rounded-full bg-amber-400/20 px-3 py-1 text-xs text-amber-800 dark:text-amber-300">🎂 Tunde’s 30th in 18 days</span>
+        )}
+      </div>
+      {!found && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/80 p-4 dark:border-white/10 dark:bg-neutral-900/70">
+          <p className="text-[13px] text-neutral-600 dark:text-neutral-300">See which of your contacts are on GiftMe. Numbers are scrambled on your phone first.</p>
+          <span className={`self-start rounded-full px-4 py-2 text-xs transition-colors ${s > 0.85 ? 'bg-purple-500 text-white' : 'bg-purple-500/15 text-purple-800 dark:text-purple-200'}`}>
+            Choose contacts
+          </span>
+          {picking && (
+            <ul className="word-in grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12px]">
+              {CONTACTS.map((c, i) => (
+                <li key={c} className="flex items-center gap-2">
+                  <span className={`grid size-4 place-items-center rounded border text-[9px] ${i < ticked ? 'border-purple-500 bg-purple-500 text-white' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                    {i < ticked ? '✓' : ''}
+                  </span>
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {found && (
+        <>
+          <p className="word-in text-[12px] text-neutral-500">3 of your 214 contacts are on GiftMe</p>
+          <ul className="flex flex-col gap-2">
+            {FOUND.map((f, i) => {
+              const p = spring(s - 2.55 - i * 0.12, 210, 20)
+              const isTunde = i === 0
+              return (
+                <li
+                  key={f.handle}
+                  className="flex items-center gap-3 rounded-xl border border-white/70 bg-white/85 p-2.5 dark:border-white/10 dark:bg-neutral-900/75"
+                  style={{ transform: `translateY(${(1 - p) * 26}px) scale(${0.94 + 0.06 * p})`, opacity: clamp(p * 2) }}
+                >
+                  <span className={`grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br text-[12px] text-neutral-700 ${f.tint}`}>
+                    {f.name.split(' ').map((w) => w[0]).join('')}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-1.5 truncate text-[14px]">
+                      {f.name}
+                      <span className="text-neutral-400">
+                        <SocialGlyph kind={f.social} />
+                      </span>
+                    </p>
+                    <p className="truncate text-[11px] text-neutral-500">
+                      {f.list} · {f.when}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] transition-colors ${
+                      isTunde && followed ? 'border border-neutral-300 text-neutral-600 dark:border-neutral-600 dark:text-neutral-300' : 'bg-purple-500/15 text-purple-800 dark:text-purple-200'
+                    }`}
+                  >
+                    {isTunde && followed ? 'Following' : 'Follow'}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </>
+      )}
+      <Cursor name="Amaka" x={cursor.x} y={cursor.y} click={(s > 0.8 && s < 1.2) || (s > 4.1 && s < 4.5)} />
+    </div>
+  )
+}
+
+function SocialGlyph({ kind }: { kind: 'instagram' | 'tiktok' | 'x' }) {
+  if (kind === 'instagram')
+    return (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+      </svg>
+    )
+  if (kind === 'tiktok')
+    return (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M16.6 3c.4 2.2 1.8 3.7 4 3.9v3.1a7.4 7.4 0 0 1-4-1.2v6.4a5.8 5.8 0 1 1-5.8-5.8c.3 0 .6 0 .9.1v3.2a2.7 2.7 0 1 0 1.8 2.5V3h3.1z" />
+      </svg>
+    )
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.8 3h3.1l-6.8 7.8 8 10.2h-6.3l-4.9-6.4L5.3 21H2.2l7.3-8.3L1.9 3h6.4l4.4 5.9L17.8 3z" />
+    </svg>
   )
 }

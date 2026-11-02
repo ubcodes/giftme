@@ -1,4 +1,5 @@
 import { Link, createFileRoute, notFound } from '@tanstack/react-router'
+import { FollowButton, SocialLinks } from '@/components/friends'
 import { ThemeToggle } from '@/components/theme'
 import { Avatar, Glow, Logo, glassCard } from '@/components/ui'
 import { shareMeta } from '@/lib/share'
@@ -46,6 +47,8 @@ function Profile() {
         <header className="flex flex-col items-center gap-4 pt-16 pb-10 text-center">
           <Avatar src={data.owner.avatarUrl} name={data.owner.displayName} size={96} />
           <h1 className="font-display text-5xl">{data.owner.displayName}</h1>
+          <SocialLinks socials={data.owner.socials} className="justify-center" />
+          {data.follow && <FollowButton handle={data.owner.handle} following={data.follow.following} />}
         </header>
         <main className="flex flex-col gap-3 pb-20">
           {data.wishlists.length === 0 && (

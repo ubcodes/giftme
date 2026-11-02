@@ -4,7 +4,7 @@ import { one, query, run } from './db'
 import { sendEmail } from './email'
 import { UserError } from './errors'
 import { initializePayment, listBanks, resolveAccount, upsertSubaccount, type PaystackStatus } from './paystack'
-import { getUserRow, toProfile } from './users'
+import { getUserRow, socialsOf, toProfile, type UserRow } from './users'
 import {
   balanceFor,
   listItems,
@@ -90,7 +90,7 @@ export async function publicWishlist(handle: string, slug: string) {
   if (!wl) return null
   const row = (await getUserRow(owner.id))!
   return {
-    owner: { displayName: row.display_name, handle: row.handle!, avatarUrl: row.avatar_url },
+    owner: { displayName: row.display_name, handle: row.handle!, avatarUrl: row.avatar_url, socials: socialsOf(row) },
     acceptsMoney: !!row.paystack_subaccount,
     wishlist: {
       id: wl.id,
@@ -106,14 +106,12 @@ export async function publicWishlist(handle: string, slug: string) {
 }
 
 export async function publicProfile(handle: string) {
-  const owner = await one<{ id: string; display_name: string; handle: string; avatar_url: string | null }>(
-    'SELECT id, display_name, handle, avatar_url FROM users WHERE handle = ?',
-    [handle.toLowerCase()],
-  )
-  if (!owner) return null
+  const owner = await one<UserRow>('SELECT * FROM users WHERE handle = ?', [handle.toLowerCase()])
+  if (!owner?.handle) return null
   const lists = await query<WishlistRow>('SELECT * FROM wishlists WHERE owner_id = ? ORDER BY created_at DESC', [owner.id])
   return {
-    owner: { displayName: owner.display_name, handle: owner.handle, avatarUrl: owner.avatar_url },
+    ownerId: owner.id,
+    owner: { displayName: owner.display_name, handle: owner.handle, avatarUrl: owner.avatar_url, socials: socialsOf(owner) },
     wishlists: lists.map((w) => ({ slug: w.slug, title: w.title, occasion: w.occasion, eventDate: w.event_date })),
   }
 }

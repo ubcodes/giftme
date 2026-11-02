@@ -18,6 +18,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as MediaSplatRouteImport } from './routes/media/$'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardNewRouteImport } from './routes/dashboard/new'
+import { Route as DashboardFriendsRouteImport } from './routes/dashboard/friends'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as WHandleIndexRouteImport } from './routes/w/$handle/index'
 import { Route as WHandleSlugRouteImport } from './routes/w/$handle/$slug'
@@ -69,6 +70,11 @@ const DashboardNewRoute = DashboardNewRouteImport.update({
   path: '/new',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardFriendsRoute = DashboardFriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const ApiUploadRoute = ApiUploadRouteImport.update({
   id: '/api/upload',
   path: '/api/upload',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/thank-you': typeof ThankYouRoute
   '/welcome': typeof WelcomeRoute
   '/api/upload': typeof ApiUploadRoute
+  '/dashboard/friends': typeof DashboardFriendsRoute
   '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/media/$': typeof MediaSplatRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/thank-you': typeof ThankYouRoute
   '/welcome': typeof WelcomeRoute
   '/api/upload': typeof ApiUploadRoute
+  '/dashboard/friends': typeof DashboardFriendsRoute
   '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/media/$': typeof MediaSplatRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/thank-you': typeof ThankYouRoute
   '/welcome': typeof WelcomeRoute
   '/api/upload': typeof ApiUploadRoute
+  '/dashboard/friends': typeof DashboardFriendsRoute
   '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/media/$': typeof MediaSplatRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/welcome'
     | '/api/upload'
+    | '/dashboard/friends'
     | '/dashboard/new'
     | '/dashboard/settings'
     | '/media/$'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/welcome'
     | '/api/upload'
+    | '/dashboard/friends'
     | '/dashboard/new'
     | '/dashboard/settings'
     | '/media/$'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/thank-you'
     | '/welcome'
     | '/api/upload'
+    | '/dashboard/friends'
     | '/dashboard/new'
     | '/dashboard/settings'
     | '/media/$'
@@ -271,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardNewRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/friends': {
+      id: '/dashboard/friends'
+      path: '/friends'
+      fullPath: '/dashboard/friends'
+      preLoaderRoute: typeof DashboardFriendsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/api/upload': {
       id: '/api/upload'
       path: '/api/upload'
@@ -310,6 +329,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardRouteChildren {
+  DashboardFriendsRoute: typeof DashboardFriendsRoute
   DashboardNewRoute: typeof DashboardNewRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -317,6 +337,7 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardFriendsRoute: DashboardFriendsRoute,
   DashboardNewRoute: DashboardNewRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
