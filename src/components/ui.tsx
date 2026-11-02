@@ -119,6 +119,14 @@ export function ItemArt({ kind, compact = false }: { kind: 'gift' | 'fund'; comp
   )
 }
 
+export function StarIcon({ filled, size = 16 }: { filled: boolean; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z" />
+    </svg>
+  )
+}
+
 function useModal(onClose: () => void) {
   const ref = useRef<HTMLDialogElement>(null)
   const closeRef = useRef(onClose)

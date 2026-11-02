@@ -1,9 +1,12 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { z } from 'zod'
 import { AddFundDialog, AddGiftDialog, EditItemDialog } from '@/components/item-editor'
 import { ShareButtons } from '@/components/share'
-import { Bar, Dialog, ErrorText, Field, ItemArt, Photo, glassCard } from '@/components/ui'
+import { Bar, Dialog, ErrorText, Field, ItemArt, Photo, StarIcon, glassCard } from '@/components/ui'
 import { WishlistForm } from '@/components/wishlist-form'
 import {
   addOfflineGiftFn,
@@ -65,12 +68,25 @@ function Editor() {
     await refresh()
   }
 
-  async function move(index: number, delta: number) {
-    const ids = items.map((i) => i.id)
-    const target = index + delta
-    if (target < 0 || target >= ids.length) return
-    ;[ids[index], ids[target]] = [ids[target], ids[index]]
-    await reorderItemsFn({ data: { wishlistId: wishlist.id, ids } })
+  // Local order so a dropped card stays put while the save happens.
+  const [order, setOrder] = useState(() => items.map((i) => i.id))
+  useEffect(() => setOrder(items.map((i) => i.id)), [items])
+  const byId = new Map(items.map((i) => [i.id, i]))
+  const ordered = order.map((id) => byId.get(id)).filter((i): i is OwnerItem => !!i)
+
+  const sensors = useSensors(
+    // A short move starts a drag, so plain clicks on Edit and ••• still work.
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // On phones, press and hold to drag; a quick swipe still scrolls the page.
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  async function onDragEnd({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return
+    const next = arrayMove(order, order.indexOf(String(active.id)), order.indexOf(String(over.id)))
+    setOrder(next)
+    await reorderItemsFn({ data: { wishlistId: wishlist.id, ids: next } })
     await refresh()
   }
 
@@ -156,20 +172,26 @@ function Editor() {
             <span className="text-sm text-neutral-600 dark:text-neutral-400">Paste a link from any shop and we'll fill in the rest.</span>
           </button>
         ) : (
-          <ul className="flex flex-col gap-2.5">
-            {items.map((item, i) => (
-              <OwnerItemRow
-                key={item.id}
-                item={item}
-                first={i === 0}
-                last={i === items.length - 1}
-                onMove={(d) => move(i, d)}
-                onEdit={() => setDialog({ kind: 'edit-item', item })}
-                onOffline={() => setDialog({ kind: 'offline', item })}
-                onChanged={refresh}
-              />
-            ))}
-          </ul>
+          <>
+            <p className="-mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+              Drag gifts to reorder them; guests see this order. Star the ones you want most.
+            </p>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <SortableContext items={order} strategy={verticalListSortingStrategy}>
+                <ul className="flex flex-col gap-2.5">
+                  {ordered.map((item) => (
+                    <OwnerItemRow
+                      key={item.id}
+                      item={item}
+                      onEdit={() => setDialog({ kind: 'edit-item', item })}
+                      onOffline={() => setDialog({ kind: 'offline', item })}
+                      onChanged={refresh}
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
+          </>
         )}
       </section>
 
@@ -295,23 +317,26 @@ function Editor() {
 
 function OwnerItemRow({
   item,
-  first,
-  last,
-  onMove,
   onEdit,
   onOffline,
   onChanged,
 }: {
   item: OwnerItem
-  first: boolean
-  last: boolean
-  onMove: (delta: number) => void
   onEdit: () => void
   onOffline: () => void
   onChanged: () => void
 }) {
   const [menu, setMenu] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [star, setStar] = useState(item.mostWanted)
+  useEffect(() => setStar(item.mostWanted), [item.mostWanted])
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+
+  async function toggleStar() {
+    setStar((v) => !v)
+    await setItemFlagsFn({ data: { id: item.id, mostWanted: !star } })
+    onChanged()
+  }
 
   async function flag(flags: { hidden?: boolean; received?: boolean }) {
     setMenu(false)
@@ -328,22 +353,27 @@ function OwnerItemRow({
   }
 
   return (
-    <li className={`relative flex flex-col gap-3 rounded-2xl p-3.5 sm:flex-row sm:items-center ${glassCard} ${item.hidden ? 'opacity-60' : ''}`}>
-      <div className="flex min-w-0 flex-1 items-center gap-4">
-        <div className="flex flex-col">
-          <button type="button" disabled={first} onClick={() => onMove(-1)} aria-label="Move up" title="Move up the list (guests see this order)" className="cursor-pointer px-1 text-neutral-400 hover:text-neutral-800 disabled:invisible dark:hover:text-neutral-200">
-            ▲
-          </button>
-          <button type="button" disabled={last} onClick={() => onMove(1)} aria-label="Move down" title="Move down the list (guests see this order)" className="cursor-pointer px-1 text-neutral-400 hover:text-neutral-800 disabled:invisible dark:hover:text-neutral-200">
-            ▼
-          </button>
-        </div>
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      {...attributes}
+      {...listeners}
+      aria-roledescription="Draggable gift"
+      className={`relative flex cursor-grab touch-manipulation flex-col gap-3 rounded-2xl p-3.5 select-none active:cursor-grabbing sm:flex-row sm:items-center ${glassCard} ${
+        item.hidden ? 'opacity-60' : ''
+      } ${isDragging ? 'z-30 scale-[1.01] shadow-xl shadow-purple-500/10 ring-1 ring-purple-300/60' : ''}`}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+        <span aria-hidden="true" className="text-neutral-300 dark:text-neutral-600">
+          <GripIcon />
+        </span>
         <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-200/70 text-neutral-400 dark:from-neutral-800/60 dark:to-neutral-900 dark:text-neutral-600">
           {item.imageUrl ? <Photo src={item.imageUrl} /> : <ItemArt kind={item.kind} compact />}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="font-display truncate text-xl leading-tight">{item.title}</span>
+            {star && <Badge tone="star">Most wanted</Badge>}
             {item.kind === 'fund' && <Badge>Cash fund</Badge>}
             {item.kind === 'gift' && !item.allowMoney && <Badge>Buy only</Badge>}
             {item.kind === 'gift' && !item.allowReserve && item.allowMoney && <Badge>Money only</Badge>}
@@ -366,6 +396,20 @@ function OwnerItemRow({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+        <button
+          type="button"
+          onClick={toggleStar}
+          aria-pressed={star}
+          aria-label={star ? 'Remove most wanted' : 'Mark as most wanted'}
+          title={star ? 'Most wanted' : 'Mark as most wanted'}
+          className={`grid min-h-9 min-w-9 cursor-pointer place-items-center rounded-full border transition-colors ${
+            star
+              ? 'border-amber-300/70 bg-amber-400/15 text-amber-500'
+              : 'border-neutral-300/70 bg-white/40 text-neutral-400 hover:text-amber-500 dark:border-neutral-700 dark:bg-white/5'
+          }`}
+        >
+          <StarIcon filled={star} />
+        </button>
         <button type="button" onClick={onEdit} className={`min-h-9 px-3.5 text-sm ${secondaryButton}`}>
           Edit
         </button>
@@ -398,6 +442,19 @@ function OwnerItemRow({
   )
 }
 
+function GripIcon() {
+  return (
+    <svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" aria-hidden="true">
+      {[4, 10, 16].map((y) => (
+        <g key={y}>
+          <circle cx="4" cy={y} r="1.6" />
+          <circle cx="10" cy={y} r="1.6" />
+        </g>
+      ))}
+    </svg>
+  )
+}
+
 function PencilIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -407,13 +464,15 @@ function PencilIcon({ size = 16 }: { size?: number }) {
   )
 }
 
-function Badge({ children, tone }: { children: React.ReactNode; tone?: 'green' }) {
+function Badge({ children, tone }: { children: React.ReactNode; tone?: 'green' | 'star' }) {
   return (
     <span
       className={`rounded-full px-2 py-0.5 text-[11px] ${
         tone === 'green'
           ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300'
-          : 'bg-neutral-900/5 text-neutral-600 dark:bg-neutral-100/10 dark:text-neutral-300'
+          : tone === 'star'
+            ? 'bg-amber-400/20 text-amber-800 dark:text-amber-300'
+            : 'bg-neutral-900/5 text-neutral-600 dark:bg-neutral-100/10 dark:text-neutral-300'
       }`}
     >
       {children}

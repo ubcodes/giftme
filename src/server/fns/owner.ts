@@ -114,7 +114,7 @@ export const updateItemFn = createServerFn({ method: 'POST' })
   )
 
 export const setItemFlagsFn = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ id: z.string(), hidden: z.boolean().optional(), received: z.boolean().optional() }))
+  .inputValidator(z.object({ id: z.string(), hidden: z.boolean().optional(), received: z.boolean().optional(), mostWanted: z.boolean().optional() }))
   .handler(({ data }) =>
     attempt(async () => {
       const { id, ...flags } = data

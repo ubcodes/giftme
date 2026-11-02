@@ -56,6 +56,7 @@ export function initDb() {
           note TEXT,
           allow_reserve INTEGER NOT NULL DEFAULT 1,
           money_enabled INTEGER NOT NULL DEFAULT 1,
+          most_wanted INTEGER NOT NULL DEFAULT 0,
           hidden INTEGER NOT NULL DEFAULT 0,
           received INTEGER NOT NULL DEFAULT 0,
           position INTEGER NOT NULL DEFAULT 0,
@@ -103,7 +104,10 @@ export function initDb() {
 
 // Columns added after the first release. SQLite has no ADD COLUMN IF NOT EXISTS, so ignore
 // the "duplicate column" error on databases that already have them.
-const MIGRATIONS = [`ALTER TABLE items ADD COLUMN money_enabled INTEGER NOT NULL DEFAULT 1`]
+const MIGRATIONS = [
+  `ALTER TABLE items ADD COLUMN money_enabled INTEGER NOT NULL DEFAULT 1`,
+  `ALTER TABLE items ADD COLUMN most_wanted INTEGER NOT NULL DEFAULT 0`,
+]
 
 async function migrate() {
   for (const sql of MIGRATIONS) {

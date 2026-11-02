@@ -38,6 +38,7 @@ export type ItemRow = {
   money_enabled: number
   hidden: number
   received: number
+  most_wanted: number
   position: number
   blnk_balance_id: string | null
 }
@@ -331,10 +332,11 @@ export async function updateItem(ownerId: string, itemId: string, raw: ItemInput
   if (imageChanged) copyImageLater(itemId, input.imageUrl)
 }
 
-export async function setItemFlags(ownerId: string, itemId: string, flags: { hidden?: boolean; received?: boolean }) {
+export async function setItemFlags(ownerId: string, itemId: string, flags: { hidden?: boolean; received?: boolean; mostWanted?: boolean }) {
   await ownedItem(ownerId, itemId)
   if (flags.hidden !== undefined) await run('UPDATE items SET hidden = ? WHERE id = ?', [flags.hidden ? 1 : 0, itemId])
   if (flags.received !== undefined) await run('UPDATE items SET received = ? WHERE id = ?', [flags.received ? 1 : 0, itemId])
+  if (flags.mostWanted !== undefined) await run('UPDATE items SET most_wanted = ? WHERE id = ?', [flags.mostWanted ? 1 : 0, itemId])
 }
 
 export async function deleteItem(ownerId: string, itemId: string) {

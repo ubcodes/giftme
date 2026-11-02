@@ -1,7 +1,7 @@
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ThemeToggle } from '@/components/theme'
-import { Avatar, Bar, Dialog, ErrorText, Field, Glow, ItemArt, Logo, Photo, glassCard } from '@/components/ui'
+import { Avatar, Bar, Dialog, ErrorText, Field, Glow, ItemArt, Logo, Photo, StarIcon, glassCard } from '@/components/ui'
 import { contributeFn, getPublicWishlistFn, reserveFn } from '@/server/fns/guest'
 import type { PublicItem } from '@/server/gifts'
 import { countdownText, formatDate } from '@/lib/dates'
@@ -173,8 +173,14 @@ function ItemCard({
         className="pointer-events-none absolute inset-0 bg-gradient-to-b from-purple-500/[0.06] via-pink-500/[0.03] to-transparent dark:from-purple-500/10 dark:via-pink-500/5"
       />
       <div className="relative flex flex-1 gap-4 p-3.5 sm:flex-col sm:gap-3 sm:p-4">
-        <div className="size-20 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-200/70 sm:aspect-[16/11] sm:size-auto sm:w-full dark:from-neutral-800/60 dark:to-neutral-900">
+        <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-200/70 sm:aspect-[16/11] sm:size-auto sm:w-full dark:from-neutral-800/60 dark:to-neutral-900">
           {item.imageUrl ? <Photo src={item.imageUrl} /> : <ItemArt kind={item.kind} />}
+          {item.mostWanted && (
+            <span className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[11px] text-amber-700 shadow-sm backdrop-blur sm:top-2.5 sm:left-2.5 dark:bg-neutral-900/85 dark:text-amber-300">
+              <StarIcon filled size={11} />
+              <span className="hidden sm:inline">Most wanted</span>
+            </span>
+          )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-xs text-neutral-500 dark:text-neutral-400">

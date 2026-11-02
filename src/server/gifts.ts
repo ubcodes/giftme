@@ -40,6 +40,7 @@ export type PublicItem = {
   link: string | null
   imageUrl: string | null
   note: string | null
+  mostWanted: boolean
   canReserve: boolean
   canContribute: boolean
   percent: number | null
@@ -71,6 +72,7 @@ async function publicItems(items: ItemRow[]): Promise<PublicItem[]> {
         link: shopLink(item.link),
         imageUrl: item.image_url,
         note: item.note,
+        mostWanted: !!item.most_wanted,
         canReserve: p.canReserve,
         canContribute: p.canContribute,
         percent: p.percent,
@@ -368,6 +370,7 @@ export async function ownerWishlistDetail(ownerId: string, wishlistId: string) {
       allowMoney: item.kind === 'fund' || !!item.money_enabled,
       hidden: !!item.hidden,
       received: !!item.received,
+      mostWanted: !!item.most_wanted,
       hasBalance: !!item.blnk_balance_id,
       raisedNgn: progress.raisedKobo / 100,
       paidOutNgn: progress.paidOutKobo / 100,
