@@ -12,6 +12,7 @@ const LINES = {
   6: 'Friends chip in any amount, or reserve a gift to buy it themselves.',
   7: 'The money lands straight in your bank, and you say thank you in one tap.',
   8: 'GiftMe. Wishlists your friends can actually give to.',
+  9: 'And find your people on GiftMe, so you never miss their big day.',
 }
 const seg = JSON.parse(readFileSync(new URL('../audio/vo-segments.json', import.meta.url)))
 const ts = (s) => new Date(s * 1000).toISOString().slice(11, 23)

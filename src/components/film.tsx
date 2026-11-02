@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 
 /**
- * The 35-second launch film (made in video/), shown with its poster until someone presses
+ * The 40-second launch film (made in video/), shown with its poster until someone presses
  * play. It plays with sound on that first press, then the native controls take over.
  */
 export function Film() {
@@ -30,7 +30,7 @@ export function Film() {
             void video.current?.play()
           }}
           className="group absolute inset-0 grid cursor-pointer place-items-center bg-black/0 transition-colors hover:bg-black/10"
-          aria-label="Play the GiftMe film, 35 seconds, with sound"
+          aria-label="Play the GiftMe film, 40 seconds, with sound"
         >
           <span className="flex items-center gap-3 rounded-full bg-white/90 py-3 pr-6 pl-3 text-[15px] text-neutral-900 shadow-xl backdrop-blur transition-transform group-hover:scale-105">
             <span className="grid size-11 place-items-center rounded-full bg-purple-500 text-white" aria-hidden="true">
@@ -38,7 +38,7 @@ export function Film() {
                 <path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z" />
               </svg>
             </span>
-            Watch the film · 0:35
+            Watch the film · 0:40
           </span>
         </button>
       )}

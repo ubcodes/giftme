@@ -1,6 +1,6 @@
 # GiftMe launch film
 
-A 35-second, 16:9 product film made entirely in code: one canvas, `window.seek(t)`, rendered
+A 40-second, 16:9 product film made entirely in code: one canvas, `window.seek(t)`, rendered
 frame by frame in headless Chrome. The voice is a Fish Audio clone of the owner's voice; the
 music and sound effects are synthesized. Shot list: [docs/shotlist.md](docs/shotlist.md).
 
@@ -29,7 +29,7 @@ Tools live in the global kit at `~/.claude/skills/motion-reel/kit` (render, sfx,
    node film/audio.mjs
    node film/captions.mjs > ../public/video/giftme-film.vtt
    K=~/.claude/skills/motion-reel/kit
-   node $K/render.mjs --html film/index.html --w 1920 --h 1080 --fps 60 --sub 4 --dur 35 --out out/silent.mp4
+   node $K/render.mjs --html film/index.html --w 1920 --h 1080 --fps 60 --sub 4 --dur 39.5 --out out/silent.mp4
    VOICE_GAIN=1.7 MUSIC_GAIN=0.3 SFX_GAIN=1.1 bash $K/mix.sh out/silent.mp4 out/voice.wav out/music.wav out/sfx.wav out/final.mp4
    ```
 3. Watch live while editing: `node $K/render.mjs --html film/index.html --serve --port 4400`, then open

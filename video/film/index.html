@@ -30,7 +30,7 @@ window.ready = (async () => {
   ])
   BOX = await (await fetch('../assets/boxes.json')).json()
   const PHOTOS = ['couple', 'mixer', 'camera', 'headphones', 'beach', 'pour-over', 'sneakers']
-  const SCREENS = ['owner-full', 'owner-add-dialog', 'dash-full', 'phone-full', 'phone-give-0', 'phone-give-1']
+  const SCREENS = ['owner-full', 'owner-add-dialog', 'dash-full', 'phone-full', 'phone-give-0', 'phone-give-1', 'friends-full', 'friends-search']
   IMG = await loadImages(Object.fromEntries([...SCREENS.map((n) => [n, `../assets/${n}.png`]), ...PHOTOS.map((n) => [n, `../assets/${n}.jpg`])]))
   // Film grain, made once from seeded noise.
   NOISE = document.createElement('canvas'); NOISE.width = NOISE.height = 256
@@ -826,6 +826,53 @@ function sBank(t) {
   if (swap < 1) caption([['Straight to', 0.35, { size: 84 }], ['your bank.', 0.55, { fam: SCRIPT, size: 120, color: ACCENT, weight: '400' }]], 120, 760, t, 2.05)
 }
 
+// ---------------------------------------------------------------- S7b: find your people (real Friends page)
+
+const SOCIALS = [['Instagram', '@amaka.obi', '#e1306c', 230, 150], ['TikTok', '@kemicooks', '#111111', 560, 235], ['X', '@ife_writes', '#111111', 860, 130], ['Substack', 'ifewrites', '#ff6719', 300, 1000]]
+function sFriends(t) {
+  const enter = spring(t, 150, 22), recede = ease.inOutCubic(prog(t, 2.2, 2.65)), exit = prog(t, 4.2, 4.5)
+  const k = 1 - recede * 0.42, s = PS * k
+  const win = { x: WIN.x + recede * (80 - WIN.x), y: WIN.y + recede * (330 - WIN.y) + (1 - enter) * 900 - ease.inQuad(exit) * 1200, w: WIN.w * k, h: WIN.h * k }
+  const view = { x: (cx) => win.x + (cx - CSS_X0) * s, y: (cy) => win.y + BAR + cy * s }
+  browserWindow(win.x, win.y, win.w, win.h, 'giftme.ng/dashboard/friends')
+  g.save(); g.beginPath(); g.rect(win.x, win.y + BAR, win.w, win.h - BAR - 20); g.clip()
+  const cssW = win.w / s, cssH = (win.h - BAR) / s
+  g.drawImage(IMG['friends-full'], CSS_X0 * 2, 0, cssW * 2, cssH * 2, win.x, win.y + BAR, win.w, win.h - BAR)
+  // the real search result, revealed once the handle is typed
+  const found = clamp((t - 1.05) * 8)
+  if (found > 0) { g.globalAlpha = found; g.drawImage(IMG['friends-search'], CSS_X0 * 2, 0, cssW * 2, Math.min(cssH, 900) * 2, win.x, win.y + BAR, win.w, Math.min(cssH, 900) * s); g.globalAlpha = 1 }
+  const sb = BOX['friends.search']
+  if (t > 0.3 && t < 1.12) {
+    const q = '@kemicooks'.slice(0, Math.max(0, Math.floor((t - 0.4) * 16)))
+    g.fillStyle = '#fff'; g.fillRect(view.x(sb.x + 6), view.y(sb.y + 6), (sb.w - 12) * s, (sb.h - 12) * s)
+    text(q, view.x(sb.x + 10), view.y(sb.y + sb.h / 2 + 5), { size: 15 * s, color: '#262626' })
+  }
+  const fb = { x: view.x(1183 - 22), y: view.y(522 - 13) }
+  if (t > 1.8) { rrect(g, fb.x, fb.y, 70 * s, 28 * s, 14 * s); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#d6d3d1'; g.stroke(); text('Following', fb.x + 35 * s, fb.y + 19 * s, { size: 12 * s, color: '#44403c', align: 'center' }) }
+  g.restore()
+  const cur = at(t, [{ t: 0, x: 1500, y: 980 }, { t: 0.3, x: view.x(sb.x + 200), y: view.y(sb.y + 30) }, { t: 1.7, x: fb.x + 35 * s, y: fb.y + 16 * s, d: 0.5 }, { t: 2.6, x: fb.x + 140, y: fb.y + 260 }])
+  cursor(cur.x, cur.y, 'Amaka', ACCENT, press(t, 1.8), 1 - exit)
+  // People you know, lifted off the page, with the handles friends use elsewhere.
+  ;[[176, 970, 536, 225, 2.45, 1330, 640], [728, 970, 536, 225, 2.6, 1500, 880]].forEach(([x, y, w, h, t0, dx, dy]) => {
+    const p = spring(t - t0, 200, 18) * (1 - exit); if (p <= 0) return
+    g.save(); g.translate(dx, dy - ease.inQuad(exit) * 900); g.scale(0.55 + 0.35 * p, 0.55 + 0.35 * p); g.rotate((t0 > 2.5 ? 0.03 : -0.03) * (2 - p)); g.globalAlpha = clamp(p * 3)
+    card(-w * 0.75, -h * 0.75, w * 1.5, h * 1.5, 26, '#fff', [50, 22, 0.2])
+    g.drawImage(IMG['friends-full'], x * 2, y * 2, w * 2, h * 2, -w * 0.75, -h * 0.75, w * 1.5, h * 1.5)
+    g.restore()
+  })
+  SOCIALS.forEach(([net, handle, col, x, y], i) => {
+    const p = spring(t - 2.8 - i * 0.15, 260, 16) * (1 - exit); if (p <= 0) return
+    g.save(); g.translate(x, y - ease.inQuad(exit) * 900); g.scale(p, p); g.rotate((i % 2 ? 0.05 : -0.05) * (1 - p))
+    const tw = measure(handle, 26, BODY) + 150
+    card(-tw / 2, -36, tw, 72, 36, '#fff', [30, 12, 0.18])
+    g.beginPath(); g.arc(-tw / 2 + 38, 0, 22, 0, Math.PI * 2); g.fillStyle = col; g.fill()
+    text(net[0], -tw / 2 + 38, 9, { size: 24, color: '#fff', align: 'center', fam: DISPLAY, weight: '600' })
+    text(handle, -tw / 2 + 72, 9, { size: 26, color: INK }); g.restore()
+  })
+  caption([['Find your people.', 0.3]], 110, 1000, t, 2.2)
+  caption([['Never miss', 2.3, { size: 84 }], ['their big day.', 2.55, { fam: SCRIPT, size: 120, color: ACCENT, weight: '400' }]], 1140, 260, t, 4.2)
+}
+
 // ---------------------------------------------------------------- S8: end
 
 function sEnd(t) {
@@ -855,7 +902,7 @@ function sEnd(t) {
 
 // ---------------------------------------------------------------- the clock
 
-const DRAW = { drop: sDrop, chaos: sChaos, intro: sIntro, add: sAdd, share: sShare, give: sGive, bank: sBank, end: sEnd }
+const DRAW = { drop: sDrop, chaos: sChaos, intro: sIntro, add: sAdd, share: sShare, give: sGive, bank: sBank, friends: sFriends, end: sEnd }
 function draw(t) {
   g.setTransform(K, 0, 0, K, 0, 0)
   background(t)

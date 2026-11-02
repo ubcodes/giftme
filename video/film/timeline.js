@@ -86,6 +86,16 @@ export const SCENES = [
     ],
   },
   {
+    id: 'friends',
+    dur: 4.5,
+    vo: { line: 9, at: 0.25 },
+    cues: [
+      [0.0, 'swoosh', 0.4], ...keys(0.4, 1.0, 0.07), [1.05, 'pop', 0.5],
+      [1.8, 'click', 0.8], [1.85, 'success', 0.4], [2.3, 'swoosh', 0.4], [2.45, 'pop', 0.55], [2.6, 'pop', 0.5],
+      [2.8, 'bubble', 0.45], [2.95, 'bubble', 0.45], [3.1, 'bubble', 0.45], [3.25, 'bubble', 0.45], [4.2, 'whoosh', 0.45],
+    ],
+  },
+  {
     id: 'end',
     dur: 5.5,
     vo: { line: 8, at: 0.25 },
