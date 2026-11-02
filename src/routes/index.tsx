@@ -615,7 +615,7 @@ function Features() {
           <Feature title="Cash funds" body="Honeymoon, school fees, a new laptop. People give toward a goal with no fixed product." />
         </Reveal>
         <Reveal className="md:col-span-2" delay={120}>
-          <Feature title="Reserve to buy" body="Guests can claim a gift and buy it themselves, so nobody buys the same blender twice." />
+          <Feature title="Reserve a gift" body="Guests can claim a gift and buy it themselves, so nobody buys the same blender twice." />
         </Reveal>
         <Reveal className="md:col-span-2" delay={160}>
           <Feature title="Private by default" body="Guests only see progress. You see every name, amount and sweet note." />
@@ -650,7 +650,7 @@ function OpenSource() {
   return (
     <section id="open-source" className="scroll-mt-20 border-t border-neutral-200/80 py-24 dark:border-neutral-800">
       <Reveal>
-        <div className="relative overflow-hidden rounded-3xl border border-neutral-200/70 bg-neutral-900 p-8 text-neutral-100 sm:p-12 dark:border-neutral-800">
+        <div className="relative overflow-clip rounded-3xl border border-neutral-200/70 bg-neutral-900 p-8 text-neutral-100 sm:p-12 dark:border-neutral-800">
           <div aria-hidden="true" className="drift-a absolute -top-24 -right-24 size-80 rounded-full bg-purple-500/30 blur-3xl" />
           <div aria-hidden="true" className="drift-b absolute -bottom-24 -left-16 size-72 rounded-full bg-pink-500/20 blur-3xl" />
           <div className="relative grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.2fr_1fr]">
@@ -671,18 +671,60 @@ function OpenSource() {
                 </a>
               )}
             </div>
-            <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-5 text-[13px] leading-relaxed text-neutral-300">
-              <code>
-                <span className="text-neutral-500">$</span> git clone giftme{'\n'}
-                <span className="text-neutral-500">$</span> npm install{'\n'}
-                <span className="text-neutral-500">$</span> npm run dev{'\n'}
-                <span className="text-emerald-400">✓</span> Ready on <span className="text-pink-300">localhost:3200</span>
-              </code>
-            </pre>
+            <CodeSnippet />
           </div>
         </div>
       </Reveal>
     </section>
+  )
+}
+
+const CLONE = REPO_URL ? `git clone ${REPO_URL}.git` : 'git clone giftme'
+const SETUP_COMMANDS = [CLONE, 'cd giftme', 'npm install', 'npm run dev']
+
+function CodeSnippet() {
+  const [copied, setCopied] = useState(false)
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(SETUP_COMMANDS.join('\n'))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // Clipboard can be blocked (e.g. insecure context); the commands stay selectable.
+    }
+  }
+  return (
+    <div className="relative min-w-0 rounded-2xl border border-white/10 bg-black/40">
+      <button
+        type="button"
+        onClick={copy}
+        data-cursor={copied ? 'Copied' : 'Copy'}
+        aria-label={copied ? 'Copied' : 'Copy commands'}
+        className="absolute top-3 right-3 grid size-8 cursor-pointer place-items-center rounded-lg border border-white/10 bg-white/5 text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+      >
+        {copied ? (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
+        ) : (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+            <rect x="8" y="8" width="12" height="12" rx="2.5" />
+            <path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" />
+          </svg>
+        )}
+      </button>
+      <pre className="overflow-x-auto p-5 pr-14 text-[13px] leading-relaxed text-neutral-300">
+        <code>
+          {SETUP_COMMANDS.map((c) => (
+            <span key={c}>
+              <span className="text-neutral-500">$</span> {c}
+              {'\n'}
+            </span>
+          ))}
+          <span className="text-emerald-400">✓</span> Ready on <span className="text-pink-300">localhost:3200</span>
+        </code>
+      </pre>
+    </div>
   )
 }
 
@@ -691,7 +733,7 @@ const FAQ = [
   { q: 'Where does the money go?', a: 'Straight to the bank account you add in your settings. GiftMe never holds your money.' },
   { q: 'Do my guests need an account?', a: 'No. They open your link, pick a gift and pay by card, bank transfer or USSD. That is all.' },
   { q: 'Can people see how much others gave?', a: 'No. Guests only see how close each gift is to being complete. Only you see names, amounts and notes.' },
-  { q: 'What if someone wants to buy the gift themselves?', a: "They tap “Reserve to buy”. Everyone else sees it's taken, so nobody doubles up." },
+  { q: 'What if someone wants to buy the gift themselves?', a: "They tap “Reserve”. Everyone else sees it's taken, so nobody doubles up." },
   { q: 'Is it really open source?', a: 'Yes. All the code is public, and anyone can read it, suggest changes or run their own copy.' },
 ]
 

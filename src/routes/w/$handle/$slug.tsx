@@ -219,7 +219,7 @@ function ItemCard({
               )}
               {item.canReserve && (
                 <button type="button" onClick={onReserve} className={`min-h-10 flex-1 px-3 text-sm ${secondaryButton}`}>
-                  Reserve to buy
+                  Reserve
                 </button>
               )}
             </div>
