@@ -321,12 +321,16 @@ export async function sendThankYou(ownerId: string, reference: string, note: str
   if (!c.email) throw new UserError('This gift has no email address to send to.')
   const owner = (await getUserRow(ownerId))!
   const item = await one<{ title: string }>('SELECT title FROM items WHERE id = ?', [c.item_id])
-  await sendEmail({
+  const sent = await sendEmail({
     to: c.email,
     subject: `A thank-you from ${owner.display_name}`,
     text: `${c.name ? `Dear ${c.name},` : 'Hello,'}\n\n${note}\n\n${owner.display_name}\n\n(For your gift toward "${item?.title ?? 'the wishlist'}", sent with GiftMe.)`,
     replyTo: owner.email ?? undefined,
   })
+  // Without an email provider the note is only logged (local development), so that still counts.
+  if (!sent && process.env.RESEND_API_KEY) {
+    throw new UserError("Your note couldn't be emailed just now. Please try again in a little while.")
+  }
   await run('UPDATE contributions SET thanked_at = ? WHERE reference = ?', [Date.now(), reference])
 }
 
