@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { FollowCursor } from '@/components/liquid'
 import { Stage, type SceneName } from '@/components/feature-stages'
 import { ThemeToggle } from '@/components/theme'
@@ -23,11 +23,10 @@ function Landing() {
       <Aurora />
       <FollowCursor />
       <Nav signedIn={signedIn} />
-      <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
-        <Hero />
-      </div>
+      <Hero />
       <Ticker />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+        <TryIt />
         <FeatureSections />
         <Occasions />
         <OpenSource />
@@ -144,49 +143,134 @@ function Nav({ signedIn }: { signedIn: boolean }) {
 
 const ROTATING = ['birthday', 'wedding', 'baby shower', 'graduation', 'housewarming', 'anniversary']
 
+const GiftScene = lazy(() => import('@/components/gift-scene'))
+
+/**
+ * A full-screen hero pinned while you scroll through it: a 3D gift drops in, and as you
+ * scroll its lid lifts and gifts from a real wishlist rise out and circle it. Scroll
+ * progress lives in a CSS variable and a ref, so scrolling never re-renders React.
+ */
 function Hero() {
   const i = useCycle(ROTATING.length, 2400)
+  const section = useRef<HTMLElement>(null)
+  const progress = useRef(0)
+  const [scene, setScene] = useState<{ still: boolean; compact: boolean } | null>(null)
+  const [active, setActive] = useState(true)
+
+  useEffect(() => {
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const probe = document.createElement('canvas')
+    const webgl = !!(probe.getContext('webgl2') || probe.getContext('webgl'))
+    if (webgl) setScene({ still, compact: window.innerWidth < 768 })
+    if (still) progress.current = 0.8
+    const el = section.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => setActive(e.isIntersecting))
+    io.observe(el)
+    let frame = 0
+    const onScroll = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const r = el.getBoundingClientRect()
+        const p = still ? 0.8 : Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - window.innerHeight)))
+        progress.current = p
+        el.style.setProperty('--p', p.toFixed(4))
+      })
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      io.disconnect()
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+    }
+  }, [])
+
   return (
-    <header className="grid grid-cols-1 items-center gap-14 pt-10 pb-20 sm:pt-16 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
-      <div className="rise flex min-w-0 flex-col gap-6">
-        <a
-          href="#open-source"
-          className="inline-flex items-center gap-2 self-start rounded-full border border-purple-300/50 bg-white/50 px-3 py-1 text-xs text-purple-800 backdrop-blur dark:border-purple-500/30 dark:bg-neutral-900/40 dark:text-purple-200"
-        >
-          <span className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-purple-400 opacity-75" />
-            <span className="relative inline-flex size-2 rounded-full bg-purple-500" />
-          </span>
-          Free and open source
-        </a>
-        <h1 className="font-display text-[36px] leading-[0.95] font-normal sm:text-6xl xl:text-7xl">
-          <span className="sm:whitespace-nowrap">The wishlist for your</span>
-          <br />
-          <span key={i} className="word-in font-editorial inline-block bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 bg-clip-text pr-2 text-[52px] text-transparent sm:text-8xl">
-            {ROTATING[i]}
-          </span>
-        </h1>
-        <p className="max-w-lg text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-400">
-          Make a wishlist in minutes. Paste a link from any shop or just type what you'd love, and we fill in the rest.
-          Share one link, and friends chip in any amount in naira or reserve a gift to buy themselves. The money goes
-          straight to your bank.
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <a href={START_HREF} data-cursor="Let's go ✨" className={`inline-flex min-h-12 items-center px-6 text-[15px] ${primaryButton}`}>
-            Start your wishlist, it's free
-          </a>
-          <a href="#how" className={`inline-flex min-h-12 items-center px-5 text-[15px] ${secondaryButton}`}>
-            See how it works
-          </a>
+    <section ref={section} className="relative -mt-[72px] h-[100svh] motion-safe:h-[240vh]" style={{ '--p': 0 } as React.CSSProperties}>
+      <div className="sticky top-0 h-[100svh] overflow-hidden">
+        <div aria-hidden="true" className="absolute inset-0">
+          {scene && (
+            <Suspense fallback={null}>
+              <GiftScene progress={progress} still={scene.still} active={active} compact={scene.compact} />
+            </Suspense>
+          )}
         </div>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-          <span>✓ No fees to start</span>
-          <span>✓ Guests don't need an account</span>
-          <span>✓ Card, transfer or USSD</span>
+
+        <div className="relative mx-auto flex h-full max-w-7xl flex-col justify-between px-5 pt-24 pb-8 sm:px-8 sm:pt-28 lg:pb-12">
+          <div className="flex flex-col gap-6" style={{ opacity: 'calc(1 - var(--p) * 2.6)', transform: 'translateY(calc(var(--p) * -120px))' }}>
+            <a
+              href="#open-source"
+              className="inline-flex items-center gap-2 self-start rounded-full border border-purple-300/50 bg-white/50 px-3 py-1 text-xs text-purple-800 backdrop-blur dark:border-purple-500/30 dark:bg-neutral-900/40 dark:text-purple-200"
+            >
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-purple-400 opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-purple-500" />
+              </span>
+              Free and open source
+            </a>
+            <h1 className="font-display text-[clamp(48px,9vw,148px)] leading-[0.86] font-normal tracking-[-0.02em]">
+              <span className="block">The wishlist</span>
+              <span className="block">for your</span>
+              <span
+                key={i}
+                className="word-in font-editorial inline-block bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 bg-clip-text pr-3 text-[1.25em] leading-[0.9] text-transparent"
+              >
+                {ROTATING[i]}
+              </span>
+            </h1>
+          </div>
+
+          <div className="flex flex-col gap-5 lg:max-w-md" style={{ opacity: 'calc(1 - var(--p) * 3)' }}>
+            <p className="text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-400">
+              Paste a link from any shop or just say what you'd love. Share one link, and friends chip in any amount in naira or reserve a
+              gift to buy themselves. The money goes straight to your bank.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <a href={START_HREF} data-cursor="Let's go ✨" className={`inline-flex min-h-12 items-center px-6 text-[15px] ${primaryButton}`}>
+                Start your wishlist, it's free
+              </a>
+              <a href="#how" className={`inline-flex min-h-12 items-center px-5 text-[15px] ${secondaryButton}`}>
+                See how it works
+              </a>
+            </div>
+          </div>
+
+          {/* What the open gift means, once you've scrolled. */}
+          <p
+            className="font-display pointer-events-none absolute bottom-10 left-5 max-w-xl text-[clamp(36px,5.5vw,84px)] leading-[0.95] sm:left-8 lg:bottom-16"
+            style={{ opacity: 'calc((var(--p) - 0.32) * 3)', transform: 'translateY(calc((1 - var(--p)) * 60px))' }}
+          >
+            Everything you'd love, <span className="font-editorial text-[1.2em] text-purple-600 dark:text-purple-300">one link</span> away.
+          </p>
+          <p
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 text-xs tracking-[0.2em] text-neutral-500 uppercase lg:motion-safe:block"
+            style={{ opacity: 'calc(1 - var(--p) * 8)' }}
+          >
+            Scroll to open ↓
+          </p>
         </div>
       </div>
+    </section>
+  )
+}
+
+/** The live wishlist from the old hero: tap Give, or watch a friend do it. */
+function TryIt() {
+  return (
+    <section className="grid grid-cols-1 items-center gap-12 border-t border-neutral-200/80 py-24 lg:grid-cols-[1fr_1.1fr] dark:border-neutral-800">
+      <Reveal className="flex flex-col gap-4">
+        <p className="text-xs tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">Go on</p>
+        <h2 className="font-display text-[clamp(44px,6vw,84px)] leading-[0.9]">
+          Try giving <span className="font-editorial text-[1.2em]">something</span>
+        </h2>
+        <p className="max-w-md text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-400">
+          This is what your friends see. Tap Give on any gift and watch the bar fill. When nobody is tapping, Chioma and the others chip in.
+        </p>
+      </Reveal>
       <HeroPreview />
-    </header>
+    </section>
   )
 }
 

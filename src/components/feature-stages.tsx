@@ -43,7 +43,8 @@ function useStageClock(ms: number) {
     const start = performance.now()
     let frame = 0
     const tick = (now: number) => {
-      setT((now - start) % ms)
+      // rAF timestamps can be a hair older than performance.now(), so never go below zero.
+      setT(Math.max(0, now - start) % ms)
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
