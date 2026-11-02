@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { FollowCursor } from '@/components/liquid'
 import { Stage, type SceneName } from '@/components/feature-stages'
+import { Film } from '@/components/film'
 import { ThemeToggle } from '@/components/theme'
 import { Bar, Logo, glassCard } from '@/components/ui'
 import { OCCASIONS } from '@/lib/occasions'
@@ -27,6 +28,10 @@ function Landing() {
       <Ticker />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <TryIt />
+        <section id="film" className="scroll-mt-20 flex flex-col gap-8 pt-20 sm:pt-24">
+          <SectionTitle kicker="See it in action" title="GiftMe in" accent="35 seconds" />
+          <Film />
+        </section>
         <FeatureSections />
         <Occasions />
         <OpenSource />

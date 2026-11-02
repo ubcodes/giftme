@@ -1,0 +1,12 @@
+audio/yt-voice*
+audio/sample-*
+audio/vo/
+out/
+demo.db
+# captures not used by the film
+assets/dashboard.png
+assets/guest-desktop*.png
+assets/owner-wishlist*.png
+assets/phone-contribute-open.png
+assets/phone-guest-*.png
+assets/phone-thanks.png

@@ -1,0 +1,875 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>GiftMe launch film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bilbo&family=Belleza&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=block" rel="stylesheet" />
+<style>html,body{margin:0;background:#f7f3ee}canvas{display:block;max-width:100vw;height:auto}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+import { spring, track, clamp, prog, ease, rng, rrect, loadImages } from './motion.js'
+import { SCENES, DUR, W as BW, H as BH } from './timeline.js'
+
+const q = new URLSearchParams(location.search)
+const W = +q.get('w') || BW, H = +q.get('h') || BH
+const c = document.getElementById('c'); c.width = W; c.height = H
+let g = c.getContext('2d')
+const K = W / 1920 // everything is laid out on a 1920-wide grid
+
+const BG = '#f7f3ee', INK = '#1c1917', MUTED = '#78716c', ACCENT = '#a855f7', PINK = '#ec4899'
+const DISPLAY = '"Cormorant Garamond"', BODY = 'Belleza', SCRIPT = 'Bilbo'
+
+let IMG, BOX, NOISE, PAGE_BG = '#fafafa'
+window.ready = (async () => {
+  await Promise.all([
+    document.fonts.load(`500 100px ${DISPLAY}`), document.fonts.load(`400 100px ${DISPLAY}`),
+    document.fonts.load(`italic 400 100px ${DISPLAY}`), document.fonts.load(`100px ${BODY}`), document.fonts.load(`100px ${SCRIPT}`),
+  ])
+  BOX = await (await fetch('../assets/boxes.json')).json()
+  const PHOTOS = ['couple', 'mixer', 'camera', 'headphones', 'beach', 'pour-over', 'sneakers']
+  const SCREENS = ['owner-full', 'owner-add-dialog', 'dash-full', 'phone-full', 'phone-give-0', 'phone-give-1']
+  IMG = await loadImages(Object.fromEntries([...SCREENS.map((n) => [n, `../assets/${n}.png`]), ...PHOTOS.map((n) => [n, `../assets/${n}.jpg`])]))
+  // Film grain, made once from seeded noise.
+  NOISE = document.createElement('canvas'); NOISE.width = NOISE.height = 256
+  const nx = NOISE.getContext('2d'), id = nx.createImageData(256, 256), r = rng(9)
+  for (let i = 0; i < id.data.length; i += 4) { const v = 128 + (r() - 0.5) * 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255 }
+  nx.putImageData(id, 0, 0)
+  // The page's own background, sampled from an empty spot of the capture.
+  const s = document.createElement('canvas'); s.width = s.height = 1
+  s.getContext('2d').drawImage(IMG['owner-full'], 2700, 2300, 1, 1, 0, 0, 1, 1)
+  const p = s.getContext('2d').getImageData(0, 0, 1, 1).data
+  PAGE_BG = `rgb(${p[0]},${p[1]},${p[2]})`
+})()
+
+// ---------------------------------------------------------------- drawing helpers
+
+const font = (px, fam, weight = '400', style = '') => `${style} ${weight} ${px}px ${fam}`
+function text(str, x, y, { size = 40, fam = BODY, color = INK, align = 'left', base = 'alphabetic', alpha = 1, weight = '400', style = '' } = {}) {
+  if (alpha <= 0) return
+  g.save(); g.globalAlpha *= alpha; g.font = font(size, fam, weight, style); g.fillStyle = color
+  g.textAlign = align; g.textBaseline = base; g.fillText(str, x, y); g.restore()
+}
+const measure = (str, size, fam, weight = '400', style = '') => { g.font = font(size, fam, weight, style); return g.measureText(str).width }
+
+function shadow(blur, oy, a) { g.shadowColor = `rgba(40,20,60,${a})`; g.shadowBlur = blur; g.shadowOffsetY = oy; g.shadowOffsetX = 0 }
+function noShadow() { g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0 }
+function card(x, y, w, h, r, fill = '#fff', sh = [40, 18, 0.16]) {
+  g.save(); if (sh) shadow(...sh); rrect(g, x, y, w, h, r); g.fillStyle = fill; g.fill(); g.restore()
+}
+/** Draw part of a 2x capture: box in CSS px, placed at (x, y) with s screen px per CSS px. */
+function crop(img, b, x, y, s, r = 0, alpha = 1) {
+  if (alpha <= 0) return
+  g.save(); g.globalAlpha *= alpha
+  if (r) { rrect(g, x, y, b.w * s, b.h * s, r); g.clip() }
+  g.drawImage(IMG[img], b.x * 2, b.y * 2, b.w * 2, b.h * 2, x, y, b.w * s, b.h * s)
+  g.restore()
+}
+function photo(name, x, y, w, h, r = 0, pos = 0.5) {
+  const im = IMG[name], ar = w / h, iar = im.width / im.height
+  let sw = im.width, sh = im.height, sx = 0, sy = 0
+  if (iar > ar) { sw = sh * ar; sx = (im.width - sw) * pos } else { sh = sw / ar; sy = (im.height - sh) * pos }
+  g.save(); if (r) { rrect(g, x, y, w, h, r); g.clip() }
+  g.drawImage(im, sx, sy, sw, sh, x, y, w, h); g.restore()
+}
+function mixColor(hex, f) { // f > 0 lightens toward white, f < 0 darkens
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, gg = (n >> 8) & 255, b = n & 255
+  const t = f > 0 ? 255 : 0, a = Math.abs(f)
+  r = Math.round(r + (t - r) * a); gg = Math.round(gg + (t - gg) * a); b = Math.round(b + (t - b) * a)
+  return `rgb(${r},${gg},${b})`
+}
+function cursor(x, y, name, color = ACCENT, press = 0, alpha = 1) {
+  if (alpha <= 0) return
+  g.save(); g.globalAlpha *= alpha; g.translate(x, y); g.scale(1 - press * 0.15, 1 - press * 0.15)
+  if (press > 0) { g.beginPath(); g.arc(0, 0, 14 + press * 26, 0, Math.PI * 2); g.fillStyle = `rgba(168,85,247,${0.28 * press})`; g.fill() }
+  shadow(8, 3, 0.3)
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(9.5, 27); g.lineTo(13.5, 15.5); g.lineTo(26, 13); g.closePath()
+  g.fillStyle = color; g.fill(); noShadow(); g.lineWidth = 2.2; g.strokeStyle = '#fff'; g.lineJoin = 'round'; g.stroke()
+  g.font = font(19, BODY); const tw = g.measureText(name).width
+  rrect(g, 20, 26, tw + 22, 30, 15); g.fillStyle = color; g.fill()
+  g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.fillText(name, 31, 41.5)
+  g.restore()
+}
+function tap(x, y, t, name) { // a finger tap on a phone: ring that grows and fades
+  if (t < -0.35 || t > 0.6) return
+  const p = prog(t, 0, 0.45)
+  g.save()
+  if (t >= 0) { g.beginPath(); g.arc(x, y, 18 + p * 40, 0, Math.PI * 2); g.strokeStyle = `rgba(236,72,153,${0.6 * (1 - p)})`; g.lineWidth = 4; g.stroke() }
+  g.beginPath(); g.arc(x, y, 22 * (t < 0 ? spring(t + 0.35, 300, 22) : 1 - 0.25 * Math.sin(Math.min(1, t / 0.2) * Math.PI)), 0, Math.PI * 2)
+  g.fillStyle = `rgba(236,72,153,${0.35 * (1 - prog(t, 0.3, 0.6))})`; g.fill()
+  if (name) { g.globalAlpha = 1 - prog(t, 0.35, 0.6); g.font = font(18, BODY); const tw = g.measureText(name).width; rrect(g, x + 24, y + 18, tw + 20, 28, 14); g.fillStyle = PINK; g.fill(); g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.fillText(name, x + 34, y + 32.5) }
+  g.restore()
+}
+const at = (t, way) => { // waypoints [{t, x, y}] with eased travel of 0.4s into each point
+  let x = way[0].x, y = way[0].y
+  for (let i = 1; i < way.length; i++) { const p = ease.inOutCubic((t - (way[i].t - (way[i].d ?? 0.4))) / (way[i].d ?? 0.4)); x += (way[i].x - way[i - 1].x) * p; y += (way[i].y - way[i - 1].y) * p }
+  return { x, y }
+}
+const press = (t, t0) => (t > t0 && t < t0 + 0.22 ? Math.sin(((t - t0) / 0.22) * Math.PI) : 0)
+
+/** Letters spring up into place; leave() sends them up and out. */
+function kinetic(str, x, y, t, { size = 180, fam = DISPLAY, color = INK, weight = '500', style = '', align = 'left', stagger = 0.028, out = 99, k = 240, d = 20, rise = 0.55 } = {}) {
+  if (t < 0 || t > out + 0.5) return 0
+  g.save(); g.font = font(size, fam, weight, style); g.fillStyle = color; g.textBaseline = 'alphabetic'
+  const total = g.measureText(str).width
+  let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i], w = g.measureText(str.slice(0, i + 1)).width - g.measureText(str.slice(0, i)).width
+    const s = spring(t - i * stagger, k, d), o = prog(t, out + i * 0.012, out + 0.18 + i * 0.012)
+    g.save(); g.globalAlpha *= clamp(s * 2.5) * (1 - o)
+    g.translate(cx + w / 2, y + (1 - s) * size * rise - o * size * 0.5); g.rotate((1 - s) * 0.12)
+    g.fillText(ch, -w / 2, 0); g.restore(); cx += w
+  }
+  g.restore()
+  return total
+}
+/** A line of words, each appearing at its own time. words: [[text, t0, opts?]] */
+function words(list, x, y, t, base, align = 'left') {
+  g.save()
+  const widths = list.map(([w, , o]) => measure(w, (o ?? base).size, (o ?? base).fam ?? base.fam, (o ?? base).weight ?? base.weight, (o ?? base).style ?? ''))
+  const gap = base.size * 0.26, total = widths.reduce((a, b) => a + b, 0) + gap * (list.length - 1)
+  let cx = align === 'center' ? x - total / 2 : x
+  list.forEach(([w, t0, o], i) => { kinetic(w, cx, y, t - t0, { ...base, ...(o ?? {}), stagger: 0.02 }); cx += widths[i] + gap })
+  g.restore()
+}
+
+// ---------------------------------------------------------------- 3D gift boxes
+
+const LIGHT = (() => { const v = [-0.45, -0.75, -0.5], l = Math.hypot(...v); return v.map((a) => a / l) })()
+function rot([x, y, z], rx, ry, rz) {
+  rx = -rx // callers use negative rx for "seen from a little above"
+  let c = Math.cos(ry), s = Math.sin(ry); [x, z] = [x * c + z * s, -x * s + z * c]
+  c = Math.cos(rx); s = Math.sin(rx); [y, z] = [y * c - z * s, y * s + z * c]
+  c = Math.cos(rz); s = Math.sin(rz); [x, y] = [x * c - y * s, x * s + y * c]
+  return [x, y, z]
+}
+const FACES = [ // vertex order for cube corners (bit 1 = +x, 2 = +y(down), 4 = +z), normal
+  [[0, 1, 5, 4], [0, -1, 0]], [[2, 6, 7, 3], [0, 1, 0]], [[0, 4, 6, 2], [-1, 0, 0]],
+  [[1, 3, 7, 5], [1, 0, 0]], [[0, 2, 3, 1], [0, 0, -1]], [[4, 5, 7, 6], [0, 0, 1]],
+]
+function cuboid(o, hx, hy, hz, off, color, ribbon, top) {
+  const pts = [], f = 1500
+  for (let i = 0; i < 8; i++) {
+    let v = [(i & 1 ? 1 : -1) * hx, (i & 2 ? 1 : -1) * hy + off[1], (i & 4 ? 1 : -1) * hz]
+    if (o.lidRot) v = rotX(v, o.lidRot, off[1] + hy)
+    v = [v[0] + off[0], v[1], v[2]]
+    v = [v[0] * o.sx, v[1] * o.sy, v[2] * o.sx]
+    const [x, y, z] = rot(v, o.rx, o.ry, o.rz)
+    const k = f / (f + o.z + z)
+    pts.push([o.x + x * k, o.y + y * k, z])
+  }
+  for (const [idx, n] of FACES) {
+    const p = idx.map((i) => pts[i])
+    const area = (p[1][0] - p[0][0]) * (p[2][1] - p[0][1]) - (p[1][1] - p[0][1]) * (p[2][0] - p[0][0])
+    if (area >= 0) continue
+    const rn = rot(o.lidRot ? rotX(n, o.lidRot, 0) : n, o.rx, o.ry, o.rz)
+    const lit = Math.max(0, -(rn[0] * LIGHT[0] + rn[1] * LIGHT[1] + rn[2] * LIGHT[2]))
+    const shade = -0.32 + lit * 0.5
+    g.beginPath(); p.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath()
+    g.fillStyle = mixColor(color, shade); g.fill()
+    // Ribbon: a band through the middle of each face (both ways on top and bottom).
+    const lerp2 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+    const band = (u0, u1, vert) => {
+      const q = vert
+        ? [lerp2(p[0], p[1], u0), lerp2(p[0], p[1], u1), lerp2(p[3], p[2], u1), lerp2(p[3], p[2], u0)]
+        : [lerp2(p[0], p[3], u0), lerp2(p[0], p[3], u1), lerp2(p[1], p[2], u1), lerp2(p[1], p[2], u0)]
+      g.beginPath(); q.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath()
+      g.fillStyle = mixColor(ribbon, shade * 0.8); g.fill()
+    }
+    const isTopBottom = n[1] !== 0
+    if (isTopBottom) { band(0.42, 0.58, true); band(0.42, 0.58, false) } else band(0.43, 0.57, n[0] !== 0 ? true : true)
+  }
+  return pts
+}
+function rotX([x, y, z], a, pivotY) { const c = Math.cos(a), s = Math.sin(a); const yy = y - pivotY; return [x, pivotY + yy * c - z * s, yy * s + z * c] }
+
+/** A gift with lid and bow. y is where its bottom sits. open: 0..1 lid flying off. */
+function gift({ x, y, z = 0, size = 200, rx = -0.35, ry = 0.6, rz = 0, color = ACCENT, ribbon = '#fde68a', open = 0, squash = 0, shadowY = null, alpha = 1 }) {
+  if (alpha <= 0) return
+  const k = 1500 / (1500 + z), hx = size / 2, hy = size * 0.4
+  g.save(); g.globalAlpha *= alpha
+  if (shadowY !== null) {
+    const lift = Math.max(0, shadowY - y), a = clamp(0.28 - lift / 2000)
+    // soft contact shadow: a radial gradient squashed into an ellipse (much cheaper than a blur filter)
+    const rx2 = hx * 1.35 * k * (1 + lift / 1500), ry2 = hx * 0.3 * k
+    g.save(); g.translate(x, shadowY + 6 * k); g.scale(1, ry2 / rx2)
+    const sg = g.createRadialGradient(0, 0, 0, 0, 0, rx2); sg.addColorStop(0, `rgba(60,30,80,${a})`); sg.addColorStop(0.6, `rgba(60,30,80,${a * 0.5})`); sg.addColorStop(1, 'rgba(60,30,80,0)')
+    g.fillStyle = sg; g.beginPath(); g.arc(0, 0, rx2, 0, Math.PI * 2); g.fill(); g.restore()
+  }
+  const o = { x, y: y - (hy * 2 * (1 - squash)) * k * 0, z, rx, ry, rz, sx: 1 + squash * 0.6, sy: 1 - squash }
+  // body sits with its bottom at y: shift by hy
+  const base = { ...o, y: y - hy * (1 - squash) * k }
+  cuboid(base, hx, hy, hx, [0, 0], color, ribbon)
+  // lid
+  const lidH = size * 0.1, lift = open * size * 2.2
+  const lid = { ...base, lidRot: open * 1.4, y: base.y - lift * k, x: base.x + open * size * 0.9 * k, rz: rz - open * 0.8 }
+  if (open < 1) {
+    const pts = cuboid(lid, hx * 1.07, lidH, hx * 1.07, [0, -hy - lidH], color, ribbon)
+    // bow, at the centre of the lid's top face
+    const tc = [0, 1, 5, 4].map((i) => pts[i]).reduce((a, p) => [a[0] + p[0] / 4, a[1] + p[1] / 4], [0, 0])
+    const bs = size * 0.2 * k
+    g.save(); g.translate(tc[0], tc[1]); g.rotate(rz)
+    for (const sgn of [-1, 1]) {
+      g.save(); g.rotate(sgn * 0.5); g.beginPath(); g.ellipse(sgn * bs * 0.62, -bs * 0.32, bs * 0.62, bs * 0.36, 0, 0, Math.PI * 2)
+      g.fillStyle = mixColor(ribbon, -0.05); g.fill(); g.lineWidth = Math.max(1, bs * 0.12); g.strokeStyle = mixColor(ribbon, -0.25); g.stroke()
+      g.beginPath(); g.ellipse(sgn * bs * 0.62, -bs * 0.32, bs * 0.25, bs * 0.12, 0, 0, Math.PI * 2); g.fillStyle = mixColor(ribbon, -0.3); g.fill(); g.restore()
+    }
+    g.beginPath(); g.arc(0, -bs * 0.12, bs * 0.24, 0, Math.PI * 2); g.fillStyle = mixColor(ribbon, -0.15); g.fill()
+    g.restore()
+  }
+  g.restore()
+}
+const GIFT_COLORS = [['#a855f7', '#fde68a'], ['#ec4899', '#ffffff'], ['#f59e0b', '#7c3aed'], ['#38bdf8', '#ffffff'], ['#34d399', '#ec4899'], ['#fafaf9', '#a855f7'], ['#7c3aed', '#f9a8d4']]
+
+/** Thrown object with gravity that bounces on a floor, closed form. */
+function ballistic(t, y0, vy, grav, floor, rest = 0.32) {
+  let y = y0, v = vy, tt = t
+  for (let b = 0; b < 4; b++) {
+    // time to hit floor: y + v t + g t^2 / 2 = floor
+    const disc = v * v + 2 * grav * (floor - y), th = (-v + Math.sqrt(Math.max(0, disc))) / grav
+    if (tt < th) return { y: y + v * tt + 0.5 * grav * tt * tt, landed: b > 0, hits: b }
+    tt -= th; y = floor; v = -(v + grav * th) * rest
+    if (Math.abs(v) < 60) return { y: floor, landed: true, hits: b + 1 }
+  }
+  return { y: floor, landed: true, hits: 4 }
+}
+
+// ---------------------------------------------------------------- shared pieces
+
+function background(t) {
+  g.fillStyle = BG; g.fillRect(0, 0, 1920, 1080)
+}
+function grain(t) {
+  g.save(); g.globalAlpha = 0.045; g.globalCompositeOperation = 'overlay'
+  const r = rng(Math.floor(t * 24) + 1), ox = Math.floor(r() * 256), oy = Math.floor(r() * 256)
+  const pat = g.createPattern(NOISE, 'repeat'); g.translate(-ox, -oy); g.fillStyle = pat; g.fillRect(0, 0, W + 256, H + 256)
+  g.restore()
+}
+function caption(lines, x, y, t, out = 99) {
+  // Big kinetic words with a soft cream backing so they read over UI.
+  let yy = y
+  for (const [str, t0, opts = {}] of lines) {
+    const size = opts.size ?? 96
+    const w = measure(str, size, opts.fam ?? DISPLAY, opts.weight ?? '500')
+    const a = clamp((t - t0) * 6) * (1 - prog(t, out, out + 0.2))
+    if (a > 0) {
+      const ew = w / 2 + 90, eh = size * 0.8
+      g.save(); g.globalAlpha = a * 0.92; g.translate(x + w / 2, yy - size * 0.32); g.scale(1, eh / ew)
+      const cg = g.createRadialGradient(0, 0, 0, 0, 0, ew); cg.addColorStop(0, BG); cg.addColorStop(0.7, BG); cg.addColorStop(1, 'rgba(247,243,238,0)')
+      g.fillStyle = cg; g.beginPath(); g.arc(0, 0, ew, 0, Math.PI * 2); g.fill(); g.restore()
+    }
+    kinetic(str, x, yy, t - t0, { size, fam: opts.fam ?? DISPLAY, color: opts.color ?? INK, weight: opts.weight ?? '500', out: out - t0 })
+    const next = lines[lines.indexOf(lines.find((l) => l[0] === str)) + 1]
+    yy += opts.lead ?? size * 0.45 + (next ? next[2]?.size ?? 96 : 96) * 0.62
+  }
+}
+function browserWindow(x, y, w, h, url, alpha = 1) {
+  g.save(); g.globalAlpha *= alpha
+  card(x, y, w, h, 22, '#ffffff', [80, 40, 0.22])
+  g.save(); rrect(g, x, y, w, 52, 22); g.clip(); g.fillStyle = '#f5f3f1'; g.fillRect(x, y, w, 52); g.restore()
+  ;['#f87171', '#fbbf24', '#34d399'].forEach((col, i) => { g.beginPath(); g.arc(x + 30 + i * 22, y + 26, 7, 0, Math.PI * 2); g.fillStyle = col; g.fill() })
+  const uw = Math.min(520, w * 0.45); rrect(g, x + w / 2 - uw / 2, y + 12, uw, 28, 14); g.fillStyle = '#ebe7e3'; g.fill()
+  text(url, x + w / 2, y + 31, { size: 17, color: '#78716c', align: 'center' })
+  g.restore()
+}
+const BAR = 52
+
+// The owner's wishlist page, as it sits in a browser window. css → screen.
+function pageView(win, cssX0, scroll, s) {
+  return {
+    x: (cx) => win.x + (cx - cssX0) * s,
+    y: (cy) => win.y + BAR + (cy - scroll) * s,
+    clip() { rrect(g, win.x, win.y + BAR, win.w, win.h - BAR, 0); g.save(); g.beginPath(); g.rect(win.x, win.y + BAR, win.w, win.h - BAR - 22); g.clip() },
+  }
+}
+
+// ---------------------------------------------------------------- S1: the gift drop
+
+function sDrop(t) {
+  const floor = 860, X = 1300
+  // Hero gift: already falling on frame one, lands on the first beat.
+  const fall = clamp(t / 0.5), landed = t >= 0.5
+  const y = landed ? floor : 120 + (floor - 120) * fall * fall
+  const u = t - 0.5
+  const squash = landed ? 0.22 * Math.exp(-7 * u) * Math.cos(16 * u) : -0.06 * fall
+  const open = spring(t - 1.0, 60, 9) * clamp((t - 1.0) * 3)
+  const exitT = prog(t, 4.15, 4.5)
+  g.save(); g.translate(0, -ease.inQuad(exitT) * 1300)
+
+  // Small gifts thrown out in three waves, on each word.
+  const waves = [1.02, 2.08, 3.27], r = rng(4)
+  const kids = []
+  waves.forEach((w0, wi) => {
+    for (let i = 0; i < 4; i++) {
+      const toward = (i + wi) % 2 === 0
+      const vx = (r() - 0.5) * 1700, vy = -(1100 + r() * 700), vz = toward ? -(500 + r() * 900) : 200 + r() * 300
+      const [col, rib] = GIFT_COLORS[(i + wi * 2 + 1) % GIFT_COLORS.length]
+      kids.push({ t0: w0 + i * 0.07, vx, vy, vz, col, rib, size: 70 + r() * 60, spin: (r() - 0.5) * 6, toward })
+    }
+  })
+  const drawKid = (kd) => {
+    const tt = t - kd.t0; if (tt < 0) return
+    const z = kd.toward ? Math.max(-950, kd.vz * tt) : Math.min(500, kd.vz * tt)
+    const k = 1500 / (1500 + z)
+    const b = ballistic(tt, floor - 300, kd.vy, 2600, kd.toward ? 4000 : floor + 30 * (1 - k))
+    let xx = X + kd.vx * tt * (kd.toward ? 1 : Math.max(0.25, 1 - tt * 0.35)), yy = b.y
+    // Gifts coming at the camera spread away from the centre of frame as they get closer.
+    if (kd.toward) { xx = 960 + (xx - 960) * k; yy = 540 + (yy - 540) * k }
+    gift({ alpha: kd.toward ? 1 - prog(k, 2.0, 2.7) : 1, x: xx, y: yy, z, size: kd.size, ry: 0.4 + kd.spin * Math.min(tt, b.landed ? 0.5 : tt), rx: -0.3 + (kd.toward ? kd.spin * tt * 0.3 : 0), rz: b.landed ? 0 : kd.spin * 0.15 * tt, color: kd.col, ribbon: kd.rib, shadowY: kd.toward ? null : floor + 30 * (1 - k) })
+  }
+  kids.filter((kd) => !kd.toward).forEach(drawKid)
+  gift({ x: X, y, size: 330, ry: 0.55 + t * 0.18, rx: -0.33, rz: landed ? 0 : 0.1 * (1 - fall), squash, open, shadowY: floor })
+  kids.filter((kd) => kd.toward).forEach(drawKid)
+  g.restore()
+
+  // The words, on the voice.
+  const L = [['Birthdays.', 0.75, 1.95], ['Weddings.', 2.06, 3.13], ['Baby showers.', 3.25, 4.2]]
+  L.forEach(([w, t0, out], i) => kinetic(w, 130, 560, t - t0, { size: i === 2 ? 168 : 196, out: out - t0, color: INK }))
+  // A small eyebrow that stays
+  text('FOR EVERY CELEBRATION', 138, 360, { size: 30, color: MUTED, alpha: clamp((t - 0.6) * 3) * (1 - exitT) })
+}
+
+// ---------------------------------------------------------------- S2: everyone asks
+
+const BUBBLES = [
+  ['Aunty Ngozi', 'What should I get you two? 🎁', 160, 170, '#7c3aed'],
+  ['Tunde', 'Abeg send your wishlist 🙏', 1180, 140, '#0ea5e9'],
+  ['Kemi', 'Should I just do cash? 😅', 1260, 520, '#db2777'],
+  ['Ife', 'Account number please 😂', 120, 610, '#059669'],
+  ['Dami', 'Is the blender still available??', 640, 850, '#d97706'],
+  ['Bayo', 'Don’t let me buy the same thing as Tunde o', 980, 330, '#4f46e5'],
+  ['Chioma', 'What do you even want sef 🤔', 230, 900, '#e11d48'],
+]
+function bubble(name, msg, x, y, col, s, alpha, tilt) {
+  g.save(); g.globalAlpha *= alpha; g.translate(x, y); g.rotate(tilt); g.scale(s, s)
+  const tw = measure(msg, 34, BODY), w = tw + 130, h = 104
+  card(0, 0, w, h, 30, '#ffffff', [30, 14, 0.14])
+  g.beginPath(); g.moveTo(26, h - 2); g.lineTo(6, h + 18); g.lineTo(54, h - 2); g.fillStyle = '#fff'; g.fill()
+  g.beginPath(); g.arc(52, 52, 30, 0, Math.PI * 2); g.fillStyle = mixColor(col, 0.82); g.fill()
+  text(name[0], 52, 63, { size: 30, color: col, align: 'center' })
+  text(name, 100, 42, { size: 22, color: col })
+  text(msg, 100, 80, { size: 34, color: INK })
+  g.restore()
+}
+// Each bubble is drawn once into its own canvas; depth of field = drawing it through a smaller
+// copy (cheap), never a blur filter (seconds per frame in software rendering).
+const SPRITES = new Map()
+function bubbleSprite(i, level) {
+  const key = i + ':' + level
+  if (SPRITES.has(key)) return SPRITES.get(key)
+  const [name, msg, , , col] = BUBBLES[i]
+  let cv
+  if (level === 0) {
+    const tw = measure(msg, 34, BODY), w = tw + 130 + 80, h = 104 + 80
+    cv = document.createElement('canvas'); cv.width = w * 2; cv.height = h * 2
+    const prev = g; const cx = cv.getContext('2d'); cx.scale(2, 2); cx.translate(40, 30)
+    swapContext(cx, () => bubble(name, msg, 0, 0, col, 1, 1, 0)); void prev
+  } else {
+    const base = bubbleSprite(i, 0), f = 1 / (1 + level * 1.4)
+    const small = document.createElement('canvas'); small.width = Math.max(1, base.width * f); small.height = Math.max(1, base.height * f)
+    const sx = small.getContext('2d'); sx.imageSmoothingQuality = 'high'; sx.drawImage(base, 0, 0, small.width, small.height)
+    cv = document.createElement('canvas'); cv.width = base.width; cv.height = base.height
+    const cx = cv.getContext('2d'); cx.imageSmoothingQuality = 'high'; cx.drawImage(small, 0, 0, cv.width, cv.height)
+  }
+  SPRITES.set(key, cv)
+  return cv
+}
+function swapContext(cx, fn) { const keep = g; g = cx; try { fn() } finally { g = keep } }
+
+function sChaos(t) {
+  const blurOut = prog(t, 2.05, 2.45)
+  const pull = Math.pow(prog(t, 3.55, 4.0), 2.2)
+  const cx = 960, cy = 540
+  BUBBLES.forEach(([name, msg, x, y, col], i) => {
+    const t0 = i * 0.25, s = spring(t - t0, 260, 17)
+    if (t < t0) return
+    const drift = Math.sin(t * 1.3 + i) * 6
+    const depth = 1 - blurOut * 0.12
+    const bx = x + (cx - x) * pull, by = y + drift + (cy - y) * pull
+    const sp = bubbleSprite(i, Math.round(blurOut * 5)), sc = (0.6 + 0.4 * s) * depth * (1 - pull)
+    g.save(); g.globalAlpha = clamp(s * 3) * (1 - blurOut * 0.6)
+    g.translate(bx, by); g.rotate((i % 2 ? -1 : 1) * 0.035 * (1 + (1 - s) * 3)); g.scale(sc / 2, sc / 2)
+    g.drawImage(sp, -80, -60); g.restore()
+  })
+  // The question, word by word on the voice.
+  g.save(); const zp = 1 - pull; g.translate(cx, cy); g.scale(zp, zp); g.translate(-cx, -cy); g.globalAlpha = 1 - pull
+  words([['So', 2.22], ['what', 2.38], ['do', 2.55], ['you', 2.68]], 960, 500, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
+  words([['actually', 2.9, { fam: SCRIPT, size: 210, color: ACCENT, weight: '400' }], ['want?', 3.32]], 960, 690, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
+  g.restore()
+  if (pull > 0.6) gift({ x: cx, y: cy + 60, size: 120 * prog(t, 3.7, 4.0), ry: t * 3, color: ACCENT })
+}
+
+// ---------------------------------------------------------------- S3: introducing
+
+const LOGO = { x: 960, y: 610 }
+// Where (and how big) the app's own nav logo sits on the first frame of the next shot.
+const MATCH = { x: 950, y: 536, s: 0.36 }
+function logo(x, y, s, t, alpha = 1) {
+  // "Gift" in the display face, "me" in the script with the brand gradient, like the site.
+  g.save(); g.globalAlpha *= alpha; g.translate(x, y); g.scale(s, s)
+  const wGift = measure('Gift', 230, DISPLAY, '500'), wMe = measure('me', 270, SCRIPT)
+  const total = wGift + wMe + 8, x0 = -total / 2
+  kinetic('Gift', x0, 0, t, { size: 230, weight: '500', stagger: 0.04, k: 300, d: 22 })
+  g.save()
+  const grad = g.createLinearGradient(x0 + wGift, 0, x0 + total, 0)
+  grad.addColorStop(0, '#a855f7'); grad.addColorStop(0.55, '#ec4899'); grad.addColorStop(1, '#3b82f6')
+  kinetic('me', x0 + wGift + 8, 0, t - 0.12, { size: 270, fam: SCRIPT, color: grad, stagger: 0.05, k: 260, d: 18 })
+  g.restore(); g.restore()
+  return total * s
+}
+function sIntro(t) {
+  // The next shot fades up underneath, so the logo lands on the app's own nav logo.
+  if (t > 1.7) { g.save(); g.globalAlpha = ease.inOutCubic(prog(t, 1.7, 2.0)); sAdd(0); g.restore() }
+  const hit = 1.0
+  const shrink = ease.inOutCubic(prog(t, 1.55, 2.0))
+  // The little gift from the last scene grows and moves aside for the logo.
+  const gx = 960 - spring(t - hit + 0.35, 200, 22) * 570, gs = 120 + spring(t, 120, 16) * 60
+  gift({ x: gx + shrink * 200, y: 660 - shrink * 60, size: gs * (1 - shrink * 0.6), ry: t * 2.4, rx: -0.4, alpha: 1 - shrink, shadowY: 680 })
+  text('INTRODUCING', 960, 360, { size: 30, color: MUTED, align: 'center', alpha: clamp((t - 0.45) * 4) * (1 - prog(t, 1.4, 1.6)) })
+  if (t >= hit - 0.02) {
+    // Match cut: the logo shrinks toward where the app's nav logo sits in the next shot.
+    const tx = 960 + (MATCH.x - 960) * shrink, ty = LOGO.y + (MATCH.y - LOGO.y) * shrink
+    logo(tx, ty, 1 - shrink * (1 - MATCH.s), t - hit)
+  }
+}
+
+// ---------------------------------------------------------------- S4: add gifts (real owner page)
+
+const WIN = { x: 330, y: 70, w: 1500, h: 960 }
+const CSS_X0 = 150, PS = 1500 / (1290 - 150) // page scale: CSS 150..1290 fills the window
+const NAV_LOGO = { x: 176, y: 30, w: 76, h: 34 }
+const NAV_LOGO_SCREEN = { x: WIN.x + (NAV_LOGO.x + NAV_LOGO.w / 2 - CSS_X0) * PS, y: WIN.y + BAR + (NAV_LOGO.y + 28 - 0) * PS, s: 0.16 * PS }
+const ROWS_TOP = 478, ROW_STEP = 104
+
+function rowsLayer(view, t, order) {
+  // order: per real row index, its slot track and entry time
+  for (const r of order) {
+    const b = BOX['owner.row' + r.i]
+    const slot = track(t, r.slots, 230, 25)
+    const a = r.from !== undefined ? clamp((t - r.from) * 5) : 1
+    if (a <= 0) continue
+    let x = view.x(b.x), y = view.y(ROWS_TOP + slot * ROW_STEP)
+    if (r.fly) { const p = spring(t - r.fly.t, 160, 18); x += (r.fly.x - x) * (1 - p); y += (r.fly.y - y) * (1 - p) }
+    const hl = r.hl ? clamp(1 - Math.abs(t - r.hl) * 1.5) : 0
+    g.save()
+    if (hl > 0) { shadow(40, 12, 0.25 * hl); rrect(g, x, y, b.w * PS, b.h * PS, 18 * PS); g.fillStyle = '#fff'; g.fill(); noShadow() }
+    crop('owner-full', b, x, y, PS, 16 * PS, a)
+    if (hl > 0) { rrect(g, x, y, b.w * PS, b.h * PS, 16 * PS); g.lineWidth = 3; g.strokeStyle = `rgba(168,85,247,${hl})`; g.stroke() }
+    g.restore()
+  }
+}
+
+function addDialog(view, t, typed, results) {
+  // The real "Add a gift" dialog, centred in the window, with typing over its input.
+  const b = BOX['add.dialog'], inp = BOX['add.input']
+  const s = PS, ext = results ? results.h : 0
+  const w = b.w * s, h = b.h * s + ext
+  const x = WIN.x + WIN.w / 2 - w / 2, y = results ? WIN.y + 8 : WIN.y + BAR + 20 + 120 * s
+  card(x, y, w, h, 24 * s, '#fff', [70, 30, 0.25])
+  g.save(); rrect(g, x, y, w, b.h * s - 6, 24 * s); g.clip()
+  g.drawImage(IMG['owner-add-dialog'], b.x * 2, b.y * 2, b.w * 2, (b.h - 4) * 2, x, y, w, (b.h - 4) * s)
+  g.restore()
+  // typing
+  const ix = x + (inp.x - b.x) * s, iy = y + (inp.y - b.y) * s
+  if (typed !== null) {
+    g.fillStyle = '#fff'; g.fillRect(ix + 32 * s, iy + 6 * s, (inp.w - 40) * s, (inp.h - 12) * s)
+    text(typed, ix + 36 * s, iy + inp.h * s / 2 + 6 * s, { size: 15.5 * s, color: '#262626' })
+    const cw = measure(typed, 15.5 * s, BODY)
+    if (Math.floor(t * 4) % 2 === 0) { g.fillStyle = ACCENT; g.fillRect(ix + 37 * s + cw, iy + 13 * s, 2, (inp.h - 26) * s) }
+  }
+  return { x, y, w, h, ix, iy, iw: inp.w * s, ih: inp.h * s, bottom: y + b.h * s, s }
+}
+
+const RESULTS = [
+  ['Polaroid instant camera', '₦119,985', 'Jumia', 'jumia.com.ng'], ['Polaroid instant camera', '₦124,500', 'Konga', 'konga.com'], ['Polaroid Spirit 600', '₦96,000', 'Jiji', 'jiji.ng'],
+  ['Polaroid instant camera', '₦98,300', 'Amazon', 'amazon.com'], ['Vintage Polaroid 600', '₦104,700', 'eBay', 'ebay.com'], ['Instant film camera', '₦89,900', 'Walmart', 'walmart.com'],
+]
+const PICK = 2
+function resultCards(d, t, burstAt, pickAt) {
+  const s = d.s, pad = 24 * s, colW = (d.w - pad * 2 - 2 * 12 * s) / 3, imgH = 84 * s, cardH = imgH + 74 * s
+  const ox = d.ix + d.iw / 2, oy = d.iy + d.ih / 2
+  const pos = []
+  ;[0, 1].forEach((row) => {
+    const top = d.bottom - 6 * s + row * (cardH + 40 * s)
+    text(row ? 'INTERNATIONAL SHOPS · Prices converted to naira' : 'SOLD IN NIGERIA', d.x + pad, top + 18 * s, { size: 12 * s, color: MUTED, alpha: clamp((t - burstAt - row * 0.15) * 4) })
+    for (let k = 0; k < 3; k++) pos.push({ x: d.x + pad + k * (colW + 12 * s), y: top + 32 * s })
+  })
+  // Shop links first, bursting out past the window edges.
+  const r = rng(21)
+  for (let i = 0; i < 14; i++) {
+    const tt = t - burstAt - i * 0.025; if (tt < 0 || tt > 1.1) continue
+    const ang = -Math.PI / 2 + (r() - 0.5) * Math.PI * 2.2, dist = 500 + r() * 900, p = ease.outExpo(tt / 1.1)
+    const dom = RESULTS[i % 6][3] + ['/p/polaroid-now', '/item/instant-cam', '/catalog/60023'][i % 3]
+    const sc = 0.8 + p * 0.7
+    g.save(); g.globalAlpha = 1 - prog(tt, 0.6, 1.1); g.translate(ox + Math.cos(ang) * dist * p, oy + Math.sin(ang) * dist * p * 0.75); g.scale(sc, sc); g.rotate((r() - 0.5) * 0.4 * p)
+    const tw = measure(dom, 20, BODY); rrect(g, -tw / 2 - 18, -20, tw + 36, 40, 20); g.fillStyle = 'rgba(28,25,23,0.9)'; g.fill()
+    text(dom, 0, 7, { size: 20, color: '#fff', align: 'center' }); g.restore()
+  }
+  RESULTS.forEach(([title, price, shop], i) => {
+    const p = spring(t - burstAt - 0.08 - i * 0.06, 170, 17)
+    if (p <= 0.001) return
+    const P = pos[i]
+    let x = ox + (P.x + colW / 2 - ox) * p - colW / 2, y = oy + (P.y + cardH / 2 - oy) * p - cardH / 2
+    let sc = 0.3 + 0.7 * p, rotz = (i % 2 ? -1 : 1) * 0.5 * (1 - p)
+    const picked = i === PICK && t > pickAt
+    if (picked) { const f = ease.inOutCubic(prog(t, pickAt + 0.15, pickAt + 0.6)); sc *= 1 - f * 0.7; y -= f * 220; rotz = f * 0.1 }
+    g.save(); g.translate(x + colW / 2, y + cardH / 2); g.scale(sc, sc); g.rotate(rotz); g.translate(-colW / 2, -cardH / 2)
+    g.globalAlpha = clamp(p * 3) * (picked ? 1 - prog(t, pickAt + 0.45, pickAt + 0.6) : 1)
+    card(0, 0, colW, cardH, 12 * s, '#fff', [20, 6, 0.1])
+    rrect(g, 0, 0, colW, cardH, 12 * s); g.lineWidth = 1.2; g.strokeStyle = i === PICK && t > pickAt - 0.3 ? ACCENT : '#e7e5e4'; g.stroke()
+    photo('camera', 6 * s, 6 * s, colW - 12 * s, imgH - 6 * s, 8 * s, 0.3 + (i % 3) * 0.2)
+    text(title, 10 * s, imgH + 22 * s, { size: 14 * s, color: INK })
+    text(price, 10 * s, imgH + 42 * s, { size: 14 * s, color: '#525252' })
+    text(shop, 10 * s, imgH + 61 * s, { size: 12 * s, color: MUTED })
+    if (picked) { g.globalAlpha *= clamp((t - pickAt) * 8); rrect(g, 0, 0, colW, cardH, 12 * s); g.fillStyle = 'rgba(168,85,247,0.85)'; g.fill(); text('Added ✓', colW / 2, cardH / 2 + 8, { size: 18 * s, color: '#fff', align: 'center' }) }
+    g.restore()
+  })
+  return pos
+}
+
+function sAdd(t) {
+  // Camera: start pushed in on the nav logo (match cut), pull back to the full window.
+  const z = 1 + 1.25 * (1 - ease.inOutCubic(prog(t, 0.0, 0.65)))
+  const focus = { x: NAV_LOGO_SCREEN.x + (960 - NAV_LOGO_SCREEN.x) * ease.inOutCubic(prog(t, 0, 0.65)), y: NAV_LOGO_SCREEN.y + (540 - NAV_LOGO_SCREEN.y) * ease.inOutCubic(prog(t, 0, 0.65)) }
+  const scroll = track(t, [[0, 0], [5.0, 230]], 120, 22)
+  const view = pageView(WIN, CSS_X0, scroll, PS)
+  const exit = prog(t, 6.1, 6.5)
+
+  g.save()
+  g.translate(960, 540); g.scale(z, z); g.translate(-focus.x, -focus.y)
+  g.translate(0, -ease.inQuad(exit) * 0)
+  browserWindow(WIN.x, WIN.y, WIN.w, WIN.h, 'giftme.ng/dashboard/w/wedding')
+  view.clip()
+  const cssH = (WIN.h - BAR) / PS
+  g.drawImage(IMG['owner-full'], CSS_X0 * 2, scroll * 2, (WIN.w / PS) * 2, cssH * 2, WIN.x, WIN.y + BAR, WIN.w, WIN.h - BAR)
+  // Clear the list area and lay the rows back in, so the list can assemble and grow.
+  g.fillStyle = PAGE_BG; g.fillRect(view.x(170), view.y(ROWS_TOP - 6), 1100 * PS, 700 * PS)
+  const kIn = 2.5, pIn = 5.25
+  const dlgCenter = { x: WIN.x + WIN.w / 2 - 544 * PS, y: WIN.y + 260 }
+  rowsLayer(view, t, [
+    { i: 0, slots: [[0, 0]], from: kIn, fly: { t: kIn, x: dlgCenter.x, y: dlgCenter.y }, hl: kIn + 0.5 },
+    { i: 1, slots: [[0, 0], [kIn, 1]], from: 0.3 },
+    { i: 2, slots: [[0, 2]], from: pIn, fly: { t: pIn, x: dlgCenter.x, y: dlgCenter.y - 120 }, hl: pIn + 0.45 },
+    { i: 3, slots: [[0, 1], [kIn, 2], [pIn, 3]], from: 0.4 },
+    { i: 4, slots: [[0, 2], [kIn, 3], [pIn, 4]], from: 0.5 },
+    { i: 5, slots: [[0, 3], [kIn, 4], [pIn, 5]], from: 0.6 },
+  ])
+  g.restore() // clip
+
+  // Dim + dialog while adding.
+  const open1 = [1.05, 2.45], open2 = [2.7, 5.15]
+  const dlgA = Math.max(clamp((t - open1[0]) * 6) * (1 - clamp((t - open1[1]) * 6)), clamp((t - open2[0]) * 6) * (1 - clamp((t - open2[1]) * 6)))
+  if (dlgA > 0) {
+    g.save(); g.globalAlpha = dlgA * 0.35; g.fillStyle = '#1c1917'; rrect(g, WIN.x, WIN.y + BAR, WIN.w, WIN.h - BAR, 0); g.fillRect(WIN.x, WIN.y + BAR, WIN.w, WIN.h - BAR - 22); g.restore()
+    const searching = t > open2[0]
+    const link = 'jumia.com.ng/kenwood-stand-mixer', q = 'polaroid camera'
+    const typedStr = searching ? q.slice(0, Math.max(0, Math.floor((t - 2.85) * 28))) : link.slice(0, Math.max(0, Math.floor((t - 1.2) * 42)))
+    const pop = searching ? spring(t - open2[0], 300, 24) : spring(t - open1[0], 300, 24)
+    g.save(); g.globalAlpha = dlgA
+    g.translate(960, 540); g.scale(0.94 + 0.06 * pop, 0.94 + 0.06 * pop); g.translate(-960, -540)
+    const ext = searching && t > 3.45 ? (20 + 2 * (84 + 74 + 40)) * PS * spring(t - 3.45, 200, 24) : 0
+    const d = addDialog(view, t, typedStr, ext ? { h: ext } : null)
+    if (!searching && t > 2.0) {
+      // filling-in state
+      const a = clamp((t - 2.0) * 8)
+      text('Filling in the name, photo and price…', d.ix + 4, d.iy + d.ih + 34 * PS, { size: 14 * PS, color: ACCENT, alpha: a })
+    }
+    if (searching && t > 3.45) resultCards(d, t, 3.5, 5.0)
+    g.restore()
+    // cursor to the picked card
+  }
+
+  // Cursor
+  const addBtn = BOX['owner.addGift']
+  const ab = { x: view.x(addBtn.x + addBtn.w / 2), y: view.y(addBtn.y + addBtn.h / 2) }
+  const cur = at(t, [
+    { t: 0, x: 1500, y: 980 }, { t: 0.95, x: ab.x, y: ab.y, d: 0.55 }, { t: 1.6, x: 1180, y: 520 },
+    { t: 2.65, x: ab.x, y: ab.y, d: 0.5 }, { t: 3.3, x: 1240, y: 360 }, { t: 4.95, x: 1080, y: 560, d: 0.5 }, { t: 6.0, x: 1080, y: 700 },
+  ])
+  // the second open happens without a click on the button in the shot; keep the pointer honest:
+  cursor(cur.x, cur.y, 'Amaka', ACCENT, Math.max(press(t, 1.0), press(t, 2.62), press(t, 5.0)))
+  g.restore() // camera
+
+  caption([['Paste any link.', 0.45]], 110, 1000, t, 2.6)
+  caption([['Or just', 2.75], ['search.', 2.95, { fam: SCRIPT, size: 130, color: ACCENT, weight: '400' }]], 110, 900, t, 6.2)
+}
+
+// ---------------------------------------------------------------- S5: share
+
+function phoneFrame(x, y, s, fn) {
+  const w = 440, h = 900
+  g.save(); g.translate(x, y); g.scale(s, s)
+  card(0, 0, w, h, 66, '#141414', [90, 40, 0.35])
+  rrect(g, 3, 3, w - 6, h - 6, 63); g.lineWidth = 3; g.strokeStyle = '#3f3f46'; g.stroke()
+  g.save(); rrect(g, 14, 14, w - 28, h - 28, 52); g.clip(); g.fillStyle = '#fff'; g.fillRect(14, 14, w - 28, h - 28)
+  g.translate(14, 14); fn(w - 28, h - 28)
+  g.restore()
+  rrect(g, w / 2 - 62, 26, 124, 34, 17); g.fillStyle = '#0a0a0a'; g.fill()
+  g.restore()
+}
+function statusBar(w, dark = false) {
+  text('9:41', 44, 38, { size: 19, color: dark ? '#fff' : INK, weight: '400' })
+  g.fillStyle = dark ? '#fff' : INK; rrect(g, w - 70, 25, 32, 15, 4); g.fill(); g.fillRect(w - 36, 30, 3, 6)
+}
+function chat(w, h, t) {
+  g.fillStyle = '#efe7de'; g.fillRect(0, 0, w, h)
+  g.fillStyle = '#f7f5f3'; g.fillRect(0, 0, w, 112); statusBar(w)
+  g.beginPath(); g.arc(78, 82, 22, 0, Math.PI * 2); g.fillStyle = '#fde68a'; g.fill(); text('💛', 78, 90, { size: 20, align: 'center' })
+  text('Family', 114, 78, { size: 21, color: INK }); text('Aunty Ngozi, Chioma, Tunde, You', 114, 100, { size: 14, color: MUTED })
+  text('‹', 24, 92, { size: 44, color: '#0a84ff' })
+  // the link, as a rich preview
+  const m1 = spring(t - 1.3, 260, 20)
+  if (m1 > 0) {
+    g.save(); g.translate(w - 22, 160); g.scale(m1, m1); g.translate(-(w - 22), -160); g.globalAlpha = clamp(m1 * 3)
+    const bw = 330, bx = w - 22 - bw
+    card(bx, 160, bw, 330, 18, '#d9fdd3', [8, 2, 0.12])
+    photo('couple', bx + 8, 168, bw - 16, 150, 12, 0.35)
+    text('Amaka & Tobi’s wedding · GiftMe', bx + 18, 346, { size: 17, color: INK })
+    text('Chip in toward a gift, or reserve one', bx + 18, 370, { size: 14, color: '#57534e' })
+    text('to buy yourself.  giftme.ng', bx + 18, 390, { size: 14, color: '#57534e' })
+    text('Our wishlist is up! 🥹', bx + 18, 430, { size: 18, color: INK })
+    text('giftme.ng/w/amaka/wedding', bx + 18, 458, { size: 16, color: '#0369a1' })
+    g.restore()
+  }
+  const msgs = [[1.9, 'Aunty Ngozi', 'Ahhh congratulations!! 🎉', '#7c3aed', 520], [2.4, 'Chioma', 'Sending something now 🎁', '#e11d48', 610]]
+  for (const [t0, name, m, col, y] of msgs) {
+    const p = spring(t - t0, 280, 20); if (p <= 0) continue
+    g.save(); g.translate(22, y); g.scale(p, p); g.globalAlpha = clamp(p * 3)
+    const bw = measure(m, 18, BODY) + 36
+    card(0, 0, Math.max(bw, 150), 74, 16, '#fff', [8, 2, 0.1])
+    text(name, 16, 26, { size: 14, color: col }); text(m, 16, 56, { size: 18, color: INK }); g.restore()
+  }
+}
+function sShare(t) {
+  // Push into the share card on the real page, copy the link.
+  const z = 1 + 0.95 * ease.inOutCubic(prog(t, 0, 0.5))
+  const sc = BOX['owner.share'], cp = BOX['owner.copy']
+  const scroll = 230 * (1 - ease.inOutCubic(prog(t, 0, 0.5))) // carry on from where the last shot left the page
+  const view = pageView(WIN, CSS_X0, scroll, PS)
+  const focus = { x: view.x(sc.x + sc.w / 2), y: pageView(WIN, CSS_X0, 0, PS).y(sc.y + sc.h / 2) }
+  const leave = ease.inOutCubic(prog(t, 0.85, 1.25))
+  if (leave < 1) {
+    g.save(); g.translate(960 + leave * 1400, 540); g.scale(z, z); g.translate(-(960 + (focus.x - 960) * prog(t, 0, 0.5)), -(540 + (focus.y - 540) * prog(t, 0, 0.5)))
+    browserWindow(WIN.x, WIN.y, WIN.w, WIN.h, 'giftme.ng/dashboard/w/wedding')
+    view.clip(); g.drawImage(IMG['owner-full'], CSS_X0 * 2, scroll * 2, (WIN.w / PS) * 2, ((WIN.h - BAR) / PS) * 2, WIN.x, WIN.y + BAR, WIN.w, WIN.h - BAR); g.restore()
+    const bx = view.x(cp.x), by = view.y(cp.y)
+    if (t > 0.6) { rrect(g, bx, by, cp.w * PS, cp.h * PS, cp.h * PS / 2); g.fillStyle = '#d1fae5'; g.fill(); text('Link copied ✓', bx + cp.w * PS / 2, by + cp.h * PS / 2 + 6, { size: 15 * PS, color: '#047857', align: 'center' }) }
+    const cur = at(t, [{ t: 0, x: focus.x - 120, y: focus.y + 160 }, { t: 0.5, x: bx + cp.w * PS * 0.5, y: by + cp.h * PS * 0.6 }])
+    cursor(cur.x, cur.y, 'Amaka', ACCENT, press(t, 0.55))
+    g.restore()
+  }
+  // The link lifts off and lands in a chat.
+  if (t > 0.75 && t < 1.45) {
+    const p = ease.inOutCubic(prog(t, 0.8, 1.35)), x = 1300 - p * 760, y = 470 - Math.sin(p * Math.PI) * 220 + p * 40
+    const sc2 = 1 + Math.sin(p * Math.PI) * 0.5
+    g.save(); g.translate(x, y); g.scale(sc2, sc2); g.rotate((1 - p) * -0.1)
+    const str = 'giftme.ng/w/amaka/wedding', tw = measure(str, 30, BODY)
+    card(-tw / 2 - 30, -32, tw + 60, 64, 32, ACCENT, [30, 12, 0.3]); text(str, 0, 10, { size: 30, color: '#fff', align: 'center' }); g.restore()
+  }
+  const ph = spring(t - 0.85, 140, 20)
+  if (ph > 0) phoneFrame(330, 90 + (1 - ph) * 900, 1, (w, h) => chat(w, h, t))
+  caption([['One link,', 1.35], ['for everyone.', 1.6, { fam: SCRIPT, size: 140, color: ACCENT, weight: '400' }]], 1000, 470, t, 2.85)
+}
+
+// ---------------------------------------------------------------- S6: friends give (real guest page, phone)
+
+const PHONE = { x: 330, y: 90 }
+function guestScreen(w, h, t) {
+  const ss = w / 390, top = 50
+  const scroll = track(t, [[0, 0], [0.25, 420]], 120, 22)
+  g.fillStyle = '#fafafa'; g.fillRect(0, 0, w, h)
+  g.drawImage(IMG['phone-full'], 0, scroll * 2, 780, ((h - top) / ss) * 2, 0, top, w, h - top)
+  g.fillStyle = '#fff'; g.fillRect(0, 0, w, top); statusBar(w)
+  const cb = BOX['phone.contribute0']
+  const tapAt = { x: (cb.x + cb.w / 2) * ss, y: top + (cb.y + cb.h / 2 - 420) * ss }
+  return tapAt
+}
+function giveDialog(w, h, t, t0) {
+  const ss = w / 390, top = 50
+  const a = clamp((t - t0) * 5)
+  // dimmed page behind, then the real dialog sliding up
+  g.save(); g.globalAlpha = a
+  g.drawImage(IMG['phone-give-0'], 0, 0, 780, ((h - top) / ss) * 2, 0, top, w, h - top)
+  g.restore()
+  const db = BOX['give.dialog'], up = (1 - spring(t - t0, 220, 24)) * 500
+  const dx = db.x * ss, dy = top + db.y * ss + up
+  g.save(); rrect(g, dx, dy, db.w * ss, db.h * ss, 22); g.clip()
+  g.drawImage(IMG['phone-give-0'], db.x * 2, db.y * 2, db.w * 2, db.h * 2, dx, dy, db.w * ss, db.h * ss)
+  // the real filled-in form, revealed field by field
+  const bands = [[218, 264, 1.15], [405, 440, 1.3], [490, 528, 1.45], [565, 640, 1.6], [648, 704, 1.15]]
+  for (const [y0, y1, tb] of bands) {
+    const p = prog(t, tb, tb + 0.12); if (p <= 0) continue
+    g.save(); g.beginPath(); g.rect(dx, top + y0 * ss + up, db.w * ss * p, (y1 - y0) * ss); g.clip()
+    g.drawImage(IMG['phone-give-1'], db.x * 2, y0 * 2, db.w * 2, (y1 - y0) * 2, dx, top + y0 * ss + up, db.w * ss, (y1 - y0) * ss); g.restore()
+  }
+  g.restore()
+  statusBar(w)
+  const chip = BOX['give.chip20'], sub = BOX['give.submit']
+  const chipC = { x: (chip.x + chip.w / 2) * ss, y: top + (chip.y + chip.h / 2) * ss }
+  if (t > 1.05) { rrect(g, chip.x * ss, top + chip.y * ss, chip.w * ss, chip.h * ss, chip.h * ss / 2); g.lineWidth = 3; g.strokeStyle = ACCENT; g.stroke() }
+  return { chip: chipC, submit: { x: (sub.x + sub.w / 2) * ss, y: top + 676 * ss } }
+}
+function thanksScreen(w, h, t, t0) {
+  const a = clamp((t - t0) * 6)
+  g.save(); g.globalAlpha = a
+  const grad = g.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, '#f5e8ff'); grad.addColorStop(0.5, '#fff'); g.fillStyle = grad; g.fillRect(0, 0, w, h)
+  statusBar(w)
+  gift({ x: w / 2, y: ballistic(t - t0, 60, 0, 3200, 360).y, size: 130, ry: 0.6 + (t - t0) * 0.6, shadowY: 360 })
+  kinetic('Thank you', w / 2, 480, t - t0 - 0.1, { size: 64, align: 'center' })
+  text('Your gift is on its way to', w / 2, 530, { size: 20, color: MUTED, align: 'center', alpha: clamp((t - t0 - 0.25) * 5) })
+  text('Amaka & Tobi.', w / 2, 556, { size: 20, color: MUTED, align: 'center', alpha: clamp((t - t0 - 0.25) * 5) })
+  const pw = 250; rrect(g, w / 2 - pw / 2, 590, pw, 44, 22); g.fillStyle = 'rgba(168,85,247,0.12)'; g.globalAlpha = a * clamp((t - t0 - 0.35) * 5); g.fill()
+  text('₦20,000 · Stand mixer', w / 2, 619, { size: 18, color: '#6b21a8', align: 'center' })
+  g.restore()
+}
+const FRIENDS = [
+  ['Tunde', 'gave ₦40,000', 'Kenwood stand mixer', '#0ea5e9', 760, 150, -0.04],
+  ['Aunty Ngozi', 'gave ₦150,000', 'Honeymoon in Zanzibar', '#7c3aed', 790, 480, 0.04],
+  ['Kemi', 'gave ₦35,000', 'Kenwood stand mixer', '#db2777', 740, 820, 0.03],
+  ['Dami', 'gave ₦96,000', 'Polaroid camera · fully gifted', '#d97706', 10, 860, -0.04],
+]
+function friendCard([name, what, item, col, x, y, tilt], p) {
+  g.save(); g.translate(x + 170, y + 50); g.scale(0.5 + 0.5 * p, 0.5 + 0.5 * p); g.rotate(tilt * (2 - p)); g.translate(-170, -50); g.globalAlpha = clamp(p * 3)
+  card(0, 0, 360, 104, 26, '#fff', [36, 16, 0.16])
+  g.beginPath(); g.arc(52, 52, 30, 0, Math.PI * 2); g.fillStyle = mixColor(col, 0.82); g.fill(); text(name[0], 52, 63, { size: 30, color: col, align: 'center' })
+  text(`${name} ${what}`, 98, 46, { size: 23, color: INK }); text(item, 98, 76, { size: 17, color: MUTED }); g.restore()
+}
+function sGive(t) {
+  const pull = ease.inOutCubic(prog(t, 2.15, 2.75))
+  const exit = prog(t, 4.6, 5.0)
+  const ps = 1 - pull * 0.16, px = PHONE.x - pull * 40 + 30, py = PHONE.y + pull * 70
+  // friends' gifts around the phone, at different depths
+  FRIENDS.forEach((f, i) => friendCard(f, spring(t - (2.5 + i * 0.25), 220, 18) * (1 - exit)))
+  g.save(); g.translate(0, ease.inQuad(exit) * -1200)
+  phoneFrame(px, py, ps, (w, h) => {
+    const tapAt = guestScreen(w, h, t)
+    let ctl = null
+    if (t > 0.78) ctl = giveDialog(w, h, t, 0.8)
+    if (t > 1.85) thanksScreen(w, h, t, 1.85)
+    tap(tapAt.x, tapAt.y, t - 0.7, 'Chioma')
+    if (ctl) { tap(ctl.chip.x, ctl.chip.y, t - 1.05); tap(ctl.submit.x, ctl.submit.y, t - 1.75) }
+  })
+  g.restore()
+  // Reserve: a gift a friend is buying themselves.
+  const rp = spring(t - 2.85, 200, 18) * (1 - exit)
+  if (rp > 0) {
+    g.save(); g.translate(1520, 760); g.scale(0.6 + 0.4 * rp, 0.6 + 0.4 * rp); g.rotate(0.03 * (1 - rp)); g.globalAlpha = clamp(rp * 3)
+    card(-300, -110, 600, 220, 30, '#fff', [60, 26, 0.2])
+    photo('sneakers', -280, -90, 180, 180, 18, 0.5)
+    text('High-top leather sneakers', -80, -40, { size: 30, fam: DISPLAY, weight: '500' })
+    text('₦52,500', -80, -2, { size: 20, color: MUTED })
+    rrect(g, -80, 26, 168, 44, 22); g.fillStyle = 'rgba(168,85,247,0.14)'; g.fill(); text('Reserved ✓', 4, 55, { size: 20, color: '#6b21a8', align: 'center' })
+    text('A friend is buying this one', -80, 98, { size: 17, color: MUTED })
+    g.restore()
+  }
+  caption([['Any amount.', 0.35]], 1240, 300, t, 4.6)
+  caption([['Or reserve it.', 2.6, { fam: SCRIPT, size: 150, color: ACCENT, weight: '400' }]], 1240, 470, t, 4.6)
+}
+
+// ---------------------------------------------------------------- S7: money lands, say thanks
+
+function sBank(t) {
+  const swap = ease.inOutCubic(prog(t, 2.05, 2.5))
+  const exit = prog(t, 4.2, 4.5)
+  // Left: the number, counting up.
+  const n = Math.round(591000 * ease.outCubic(prog(t, 0.3, 1.5)) / 1000) * 1000
+  g.save(); g.translate(0, -swap * 900)
+  text('Raised for Amaka & Tobi', 120, 330, { size: 34, color: MUTED, alpha: clamp((t - 0.2) * 4) })
+  const nw = kinetic('N' + n.toLocaleString('en-NG'), 110, 520, t - 0.25, { size: 200, k: 300, d: 24, stagger: 0 })
+  if (t > 0.25) { const nW = measure('N', 200, DISPLAY, '500'); g.fillStyle = INK; g.fillRect(100, 520 - 92, nW + 20, 11); g.fillRect(100, 520 - 62, nW + 20, 11) }
+  text('from 9 gifts, on one wishlist', 120, 590, { size: 30, color: MUTED, alpha: clamp((t - 0.6) * 4) })
+  // Right: the real dashboard
+  const dw = 860, s = 1.35
+  const win = { x: 980, y: 210 + (1 - spring(t, 140, 20)) * 700, w: dw, h: 640 }
+  browserWindow(win.x, win.y, win.w, win.h, 'giftme.ng/dashboard')
+  g.save(); g.beginPath(); g.rect(win.x, win.y + BAR, win.w, win.h - BAR - 20); g.clip()
+  g.drawImage(IMG['dash-full'], 150 * 2, 100 * 2, (dw / s) * 2, ((win.h - BAR) / s) * 2, win.x, win.y + BAR, dw, win.h - BAR)
+  g.restore()
+  g.restore()
+  // Credit alert
+  const al = spring(t - 1.0, 260, 22) * (1 - prog(t, 2.0, 2.25))
+  if (al > 0) {
+    g.save(); g.translate(0, (1 - al) * -260); g.globalAlpha = clamp(al * 2)
+    card(1000, 40, 820, 140, 34, 'rgba(255,255,255,0.97)', [50, 20, 0.22])
+    rrect(g, 1028, 66, 88, 88, 22); g.fillStyle = '#1c1917'; g.fill(); text('₦', 1072, 126, { size: 48, color: '#fff', align: 'center', fam: DISPLAY, weight: '600' })
+    text('Zenith Bank', 1140, 98, { size: 26, color: INK }); text('now', 1790, 98, { size: 20, color: MUTED, align: 'right' })
+    text('Credit Alert: ₦20,000.00 · GiftMe gift from Chioma', 1140, 138, { size: 22, color: '#44403c' })
+    g.restore()
+  }
+  // Who gave → say thank you
+  if (swap > 0) {
+    const s = 1.3, wb = BOX['owner.whoGave'], st = BOX['owner.sayThanks']
+    const win = { x: 960 - (wb.w * s) / 2, y: 120 + (1 - swap) * 900, w: wb.w * s, h: 520 }
+    g.save(); g.translate(0, ease.inQuad(exit) * -1100)
+    card(win.x - 20, win.y - 20, win.w + 40, win.h + 40, 30, '#fff', [80, 36, 0.2])
+    g.save(); rrect(g, win.x - 20, win.y - 20, win.w + 40, win.h + 40, 30); g.clip()
+    g.fillStyle = PAGE_BG; g.fillRect(win.x - 20, win.y - 20, win.w + 40, win.h + 40)
+    g.drawImage(IMG['owner-full'], wb.x * 2, wb.y * 2, wb.w * 2, (win.h / s) * 2, win.x, win.y, win.w, win.h)
+    const bx = win.x + (st.x - wb.x) * s, by = win.y + (st.y - wb.y) * s
+    if (t > 2.95) { rrect(g, bx - 4, by - 2, st.w * s + 8, st.h * s + 4, (st.h * s) / 2); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#d6d3d1'; g.stroke(); text('Thanked ✓', bx + (st.w * s) / 2, by + (st.h * s) / 2 + 6, { size: 14 * s, color: '#44403c', align: 'center' }) }
+    g.restore()
+    const cur = at(t, [{ t: 2.2, x: 1500, y: 900 }, { t: 2.85, x: bx + st.w * s * 0.5, y: by + st.h * s * 0.6, d: 0.5 }, { t: 3.9, x: bx + 120, y: by + 160 }])
+    cursor(cur.x, cur.y, 'Amaka', ACCENT, press(t, 2.9))
+    // the note flies off
+    const f = prog(t, 3.0, 3.8)
+    if (f > 0 && f < 1) {
+      const ex = bx + f * 500, ey = by - Math.sin(f * Math.PI * 0.9) * 420 - f * 200
+      g.save(); g.translate(ex, ey); g.rotate(-0.4 + f * 0.8); g.scale(1 + f * 0.3, 1 + f * 0.3); g.globalAlpha = 1 - prog(f, 0.75, 1)
+      card(-60, -40, 120, 80, 10, '#fff', [20, 8, 0.25]); g.beginPath(); g.moveTo(-60, -40); g.lineTo(0, 6); g.lineTo(60, -40); g.strokeStyle = '#d6d3d1'; g.lineWidth = 2; g.stroke()
+      g.beginPath(); g.arc(0, 6, 14, 0, Math.PI * 2); g.fillStyle = ACCENT; g.fill(); text('♥', 0, 13, { size: 18, color: '#fff', align: 'center' }); g.restore()
+    }
+    g.restore()
+    caption([['Say thank you,', 2.3], ['in one tap.', 2.55, { fam: SCRIPT, size: 130, color: ACCENT, weight: '400' }]], 140, 830, t, 4.2)
+  }
+  if (swap < 1) caption([['Straight to', 0.35, { size: 84 }], ['your bank.', 0.55, { fam: SCRIPT, size: 120, color: ACCENT, weight: '400' }]], 120, 760, t, 2.05)
+}
+
+// ---------------------------------------------------------------- S8: end
+
+function sEnd(t) {
+  const floor = 1030, r = rng(77)
+  const rain = Array.from({ length: 12 }, (_, i) => ({ x: 110 + i * 155 + (r() - 0.5) * 60, t0: r() * 0.9, size: 90 + r() * 80, ry: r() * 3, c: GIFT_COLORS[i % GIFT_COLORS.length] }))
+  rain.sort((a, b) => a.size - b.size)
+  for (const d of rain) {
+    const tt = t - d.t0; if (tt < 0) continue
+    const b = ballistic(tt, -150, 300, 3400, floor, 0.28)
+    gift({ x: d.x, y: b.y, size: d.size, ry: d.ry + (b.landed ? 0 : tt * 2), rx: -0.3, color: d.c[0], ribbon: d.c[1], shadowY: floor })
+  }
+  // Logo on "GiftMe", then the tagline word by word.
+  logo(960, 380, 0.82, t - 0.28)
+  words([['Wishlists', 1.15], ['your', 1.55], ['friends', 1.72], ['can', 1.98]], 960, 540, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
+  words([['actually', 2.2, { fam: SCRIPT, size: 116, color: ACCENT, weight: '400' }], ['give', 2.72], ['to.', 2.95]], 960, 650, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
+  const cp = spring(t - 3.5, 220, 18)
+  if (cp > 0) {
+    const pr = press(t, 4.3)
+    g.save(); g.translate(960, 780); g.scale((0.6 + 0.4 * cp) * (1 - pr * 0.05), (0.6 + 0.4 * cp) * (1 - pr * 0.05)); g.globalAlpha = clamp(cp * 3)
+    card(-300, -48, 600, 96, 48, ACCENT, [40, 16, 0.3]); text('Start your wishlist, it’s free', 0, 12, { size: 34, color: '#fff', align: 'center' })
+    g.restore()
+    text('giftme.ng', 960, 875, { size: 30, color: MUTED, align: 'center', alpha: clamp((t - 3.7) * 4) })
+  }
+  const cur = at(t, [{ t: 3.4, x: 1500, y: 980 }, { t: 4.2, x: 1080, y: 790, d: 0.6 }])
+  if (t > 3.4) cursor(cur.x, cur.y, 'You', ACCENT, press(t, 4.3), clamp((t - 3.4) * 4))
+}
+
+// ---------------------------------------------------------------- the clock
+
+const DRAW = { drop: sDrop, chaos: sChaos, intro: sIntro, add: sAdd, share: sShare, give: sGive, bank: sBank, end: sEnd }
+function draw(t) {
+  g.setTransform(K, 0, 0, K, 0, 0)
+  background(t)
+  for (const s of SCENES) if (t >= s.from && t < s.to) { g.save(); DRAW[s.id](t - s.from); g.restore() }
+  if (t >= DUR) { g.save(); DRAW.end(SCENES.at(-1).dur); g.restore() }
+  g.setTransform(1, 0, 0, 1, 0, 0)
+  grain(t)
+}
+window.seek = (t) => { draw(t); return true }
+window.DUR = DUR
+if (!q.get('render')) window.ready.then(() => {
+  const t0 = performance.now(), start = +(q.get('t') || 0)
+  ;(function loop() { draw((start + (performance.now() - t0) / 1000) % DUR); requestAnimationFrame(loop) })()
+})
+</script>
+</body>
+</html>
