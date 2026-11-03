@@ -1,6 +1,6 @@
 import { ContactShadows, Environment, Float, Lightformer, RoundedBox, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Suspense, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { clamp, easeInOut, prog, spring } from '@/lib/motion'
 
@@ -15,6 +15,8 @@ export type SceneProps = {
   still: boolean
   active: boolean
   compact: boolean
+  /** 'hero' sits beside the headline; 'center' is the closing gift above the last call to action. */
+  layout?: 'hero' | 'center'
 }
 
 const PURPLE = '#a855f7'
@@ -34,7 +36,7 @@ export default function GiftScene(props: SceneProps) {
     <Canvas
       dpr={[1, props.compact ? 1.5 : 2]}
       frameloop={props.active && !props.still ? 'always' : 'demand'}
-      camera={{ position: [0, 0.9, props.compact ? 9.6 : 8.2], fov: 34 }}
+      camera={{ position: [0, 0.9, props.layout === 'center' ? 7 : props.compact ? 9.6 : 8.2], fov: 34 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       style={{ pointerEvents: 'none' }}
     >
@@ -51,25 +53,29 @@ export default function GiftScene(props: SceneProps) {
       <Suspense fallback={null}>
         <Gift {...props} />
       </Suspense>
-      <Confetti still={props.still} compact={props.compact} />
+      {props.layout !== 'center' && <Confetti still={props.still} compact={props.compact} />}
       <ContactShadows position={[0, -1.25, 0]} opacity={0.32} blur={2.6} far={4} scale={9} color="#581c87" />
     </Canvas>
   )
 }
 
-function Gift({ progress, still }: SceneProps) {
+function Gift({ progress, still, active, layout = 'hero' }: SceneProps) {
   const { viewport } = useThree()
-  // Wide screens put the gift to the right of the headline; tall ones below it.
-  const wide = viewport.aspect > 1.15
+  // Wide screens put the hero gift to the right of the headline; tall ones below it.
+  const wide = viewport.aspect > 1.15 && layout === 'hero'
   const baseX = wide ? viewport.width * 0.2 : 0
-  const baseY = wide ? -0.45 : -viewport.height * 0.03
-  const size = wide ? 0.8 : Math.min(0.8, viewport.width / 7.2)
+  const baseY = layout === 'center' ? -0.2 : wide ? -0.45 : -viewport.height * 0.03
+  const size = layout === 'center' ? Math.min(1.25, viewport.width / 4.5) : wide ? 0.8 : Math.min(0.8, viewport.width / 7.2)
   const root = useRef<THREE.Group>(null)
   const body = useRef<THREE.Group>(null)
   const lid = useRef<THREE.Group>(null)
   const items = useRef<(THREE.Group | null)[]>([])
   const start = useRef<number | null>(null)
   const lean = useRef({ x: 0, y: 0 })
+  // Drop in again whenever it comes back into view.
+  useEffect(() => {
+    if (active) start.current = null
+  }, [active])
 
   useFrame((state, delta) => {
     if (start.current === null) start.current = state.clock.elapsedTime

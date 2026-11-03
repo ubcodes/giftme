@@ -4,6 +4,7 @@ import { FollowCursor } from '@/components/liquid'
 import { Stage, type SceneName } from '@/components/feature-stages'
 import { Film } from '@/components/film'
 import { ThemeToggle } from '@/components/theme'
+import { useMagnetic, useScrollVar, useSmoothScroll } from '@/lib/scroll'
 import { Bar, Logo, glassCard } from '@/components/ui'
 import { OCCASIONS } from '@/lib/occasions'
 import { REPO_URL } from '@/lib/site'
@@ -19,6 +20,8 @@ const START_HREF = '/start'
 function Landing() {
   const { viewer } = Route.useRouteContext()
   const signedIn = !!viewer?.user
+  useSmoothScroll()
+  useMagnetic()
   return (
     <div className="relative min-h-screen overflow-x-clip">
       <Aurora />
@@ -232,7 +235,7 @@ function Hero() {
               gift to buy themselves. The money goes straight to your bank.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <a href={START_HREF} data-cursor="Let's go ✨" className={`inline-flex min-h-12 items-center px-6 text-[15px] ${primaryButton}`}>
+              <a href={START_HREF} data-magnetic data-cursor="Let's go ✨" className={`inline-flex min-h-12 items-center px-6 text-[15px] ${primaryButton}`}>
                 Start your wishlist, it's free
               </a>
               <a href="#how" className={`inline-flex min-h-12 items-center px-5 text-[15px] ${secondaryButton}`}>
@@ -671,39 +674,103 @@ const FEATURES: FeatureSpec[] = [
 function FeatureSections() {
   return (
     <div className="flex flex-col">
-      {FEATURES.map((f) => (
-        <section
-          key={f.id}
-          id={f.id}
-          className="scroll-mt-20 flex flex-col gap-8 border-t border-neutral-200/80 py-20 first:border-t-0 sm:py-24 dark:border-neutral-800"
-        >
-          <Reveal className="flex max-w-3xl flex-col gap-4">
-            <h2 className="font-display flex flex-wrap items-baseline gap-x-3 text-4xl leading-none sm:text-5xl">
-              <span
-                aria-hidden="true"
-                className="grid size-11 translate-y-1 place-items-center self-center rounded-2xl bg-white text-2xl shadow-[0_6px_16px_-6px_rgb(88_28_135/0.35),inset_0_-3px_0_rgb(0_0_0/0.06)] dark:bg-neutral-800"
-              >
-                {f.icon}
-              </span>
-              <span>{f.title}</span>
-              <span className="font-editorial text-5xl sm:text-6xl">{f.accent}</span>
-            </h2>
-            <p className="max-w-2xl text-[15px] leading-relaxed text-neutral-600 sm:text-base dark:text-neutral-400 [&_b]:font-medium [&_b]:text-neutral-900 dark:[&_b]:text-neutral-100">
-              {f.body}
-            </p>
-          </Reveal>
-          <Stage scene={f.scene} />
-          <ul className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {f.points.map((p) => (
-              <li key={p.title} className="flex flex-col gap-1">
-                <span className="font-medium">{p.title}</span>
-                <span className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{p.body}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {FEATURES.map((f, i) => (
+        <FeatureSection key={f.id} feature={f} index={i} />
       ))}
     </div>
+  )
+}
+
+/** A word-by-word reveal driven by the section's scroll progress (--s), each word rising out of its own mask. */
+function ScrollWords({ text, className = '', offset = 0 }: { text: string; className?: string; offset?: number }) {
+  return (
+    <span className={className}>
+      {text.split(' ').map((word, i) => (
+        <span key={i} className="inline-block overflow-hidden pr-[0.22em] pb-[0.08em] align-bottom">
+          <span
+            className="inline-block"
+            style={{ transform: `translateY(calc((1 - clamp(0, calc(var(--s) * 3.2 - ${(i + offset) * 0.18}), 1)) * 105%))` }}
+          >
+            {word}
+          </span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
+/**
+ * One chapter: a big outlined number, a headline that rises word by word, and the demo screen
+ * tilting up from flat in 3D as it scrolls into view. The "give" chapter is dark, for contrast.
+ */
+function FeatureSection({ feature: f, index }: { feature: FeatureSpec; index: number }) {
+  const ref = useRef<HTMLElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
+  useScrollVar(ref, { start: 0.95, end: 0.45 })
+  useScrollVar(stage, { start: 1, end: 0.3 })
+  const dark = f.id === 'give'
+  const titleWords = f.title.split(' ').length
+  return (
+    <section
+      ref={ref}
+      id={f.id}
+      className={`relative isolate scroll-mt-20 flex flex-col gap-10 py-24 sm:py-32 ${dark ? 'dark text-neutral-100' : ''}`}
+      style={{ '--s': 0 } as React.CSSProperties}
+    >
+      {dark && (
+        <div aria-hidden="true" className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 overflow-hidden bg-[#0c0814]">
+          <div className="absolute -top-40 left-[10%] h-[420px] w-[620px] rounded-full bg-purple-600/25 blur-3xl" />
+          <div className="absolute -right-20 bottom-0 h-[380px] w-[520px] rounded-full bg-pink-600/15 blur-3xl" />
+        </div>
+      )}
+      <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-[auto_1fr] lg:gap-12">
+        <span
+          aria-hidden="true"
+          className="font-display text-[clamp(88px,14vw,220px)] leading-[0.75] text-transparent [-webkit-text-stroke:1.5px_rgb(168_85_247/0.55)]"
+          style={{ opacity: 'calc(0.25 + var(--s) * 0.75)', transform: 'translateX(calc((1 - var(--s)) * -40px))' }}
+        >
+          {String(index + 1).padStart(2, '0')}
+        </span>
+        <div className="flex max-w-3xl flex-col gap-5">
+          <p className="flex items-center gap-2 text-xs tracking-[0.18em] text-neutral-500 uppercase dark:text-neutral-400">
+            <span aria-hidden="true" className="text-base">
+              {f.icon}
+            </span>
+            Chapter {index + 1} of {FEATURES.length}
+          </p>
+          <h2 className="font-display text-[clamp(40px,5.6vw,84px)] leading-[0.95] tracking-[-0.01em]">
+            <ScrollWords text={f.title} />{' '}
+            <ScrollWords text={f.accent} offset={titleWords} className="font-editorial text-[1.18em] text-purple-600 dark:text-purple-300" />
+          </h2>
+          <p
+            className="max-w-2xl text-[15px] leading-relaxed text-neutral-600 sm:text-base dark:text-neutral-400 [&_b]:font-medium [&_b]:text-neutral-900 dark:[&_b]:text-neutral-100"
+            style={{ opacity: 'clamp(0, calc(var(--s) * 2 - 0.4), 1)' }}
+          >
+            {f.body}
+          </p>
+        </div>
+      </div>
+      <div ref={stage} className="[perspective:1600px]" style={{ '--s': 0 } as React.CSSProperties}>
+        <div
+          className="origin-bottom"
+          style={{
+            transform: 'rotateX(calc((1 - var(--s)) * 26deg)) scale(calc(0.86 + var(--s) * 0.14)) translateY(calc((1 - var(--s)) * 40px))',
+            opacity: 'calc(0.35 + var(--s) * 0.65)',
+          }}
+        >
+          <Stage scene={f.scene} />
+        </div>
+      </div>
+      <ul className="grid grid-cols-1 gap-6 border-t border-neutral-200/80 pt-8 sm:grid-cols-3 dark:border-white/10">
+        {f.points.map((p, k) => (
+          <li key={p.title} className="flex flex-col gap-1.5">
+            <span className="text-xs text-purple-600 tabular-nums dark:text-purple-300">0{k + 1}</span>
+            <span className="font-display text-2xl leading-tight">{p.title}</span>
+            <span className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{p.body}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -717,21 +784,50 @@ const OCCASION_TINTS = [
   'from-blue-300/30 to-pink-200/30',
 ]
 
+/**
+ * Occasions as a strip of 3D cards. On big screens the section pins and scrolling down slides
+ * the strip sideways; on phones it's a swipeable row.
+ */
 function Occasions() {
+  const section = useRef<HTMLElement>(null)
+  const track = useRef<HTMLDivElement>(null)
+  useScrollVar(section, { start: 0, end: -1.4 })
+  useEffect(() => {
+    const measure = () => {
+      const el = track.current
+      if (el && section.current) section.current.style.setProperty('--dist', String(Math.max(0, el.scrollWidth - el.clientWidth + 48)))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
   return (
-    <section className="border-t border-neutral-200/80 py-24 dark:border-neutral-800">
-      <SectionTitle kicker="Occasions" title="For whatever you're" accent="celebrating" />
-      <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {OCCASIONS.map((o, i) => (
-          <a key={o.id} href={START_HREF} className={`group relative flex h-full flex-col gap-1 overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${glassCard}`}>
-              <div aria-hidden="true" className={`absolute -right-10 -bottom-10 size-32 rounded-full bg-gradient-to-br opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100 ${OCCASION_TINTS[i % OCCASION_TINTS.length]}`} />
-              <span className="font-display relative text-2xl leading-tight">{o.label}</span>
-              <span className="relative text-sm text-neutral-500 dark:text-neutral-400">{o.blurb}</span>
-              <span className="relative mt-3 text-sm text-purple-700 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100 dark:text-purple-300">
-                Start one →
+    <section ref={section} className="relative border-t border-neutral-200/80 lg:h-[240vh] dark:border-neutral-800" style={{ '--s': 0, '--dist': 0 } as React.CSSProperties}>
+      <div className="flex flex-col justify-center gap-12 py-24 lg:sticky lg:top-0 lg:h-screen lg:py-0">
+        <SectionTitle kicker="Occasions" title="For whatever you're" accent="celebrating" />
+        <div
+          ref={track}
+          className="-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-6 [perspective:1400px] [scrollbar-width:none] sm:-mx-8 sm:px-8 lg:overflow-visible lg:[transform:translateX(calc(var(--s)*var(--dist)*-1px))]"
+        >
+          {OCCASIONS.map((o, i) => (
+            <a
+              key={o.id}
+              href={START_HREF}
+              data-cursor={`Start a ${o.label.toLowerCase()} list`}
+              className="group relative flex h-[380px] w-[280px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[28px] border border-white/70 bg-white/60 p-6 shadow-[0_30px_60px_-30px_rgb(88_28_135/0.35)] backdrop-blur-xl transition-transform duration-500 [transform:rotateY(-10deg)_translateZ(0)] [transform-style:preserve-3d] hover:[transform:rotateY(0deg)_translateZ(40px)] sm:w-[320px] dark:border-white/10 dark:bg-neutral-900/60"
+            >
+              <div aria-hidden="true" className={`absolute -top-16 -right-16 size-64 rounded-full bg-gradient-to-br opacity-80 blur-2xl ${OCCASION_TINTS[i % OCCASION_TINTS.length]}`} />
+              <span aria-hidden="true" className="font-display relative text-[96px] leading-none text-transparent [-webkit-text-stroke:1.2px_rgb(168_85_247/0.5)]">
+                {String(i + 1).padStart(2, '0')}
               </span>
+              <div className="relative flex flex-col gap-2">
+                <span className="font-display text-4xl leading-none">{o.label}</span>
+                <span className="text-sm text-neutral-600 dark:text-neutral-400">{o.blurb}</span>
+                <span className="mt-2 text-sm text-purple-700 transition-transform duration-300 group-hover:translate-x-1 dark:text-purple-300">Start one →</span>
+              </div>
             </a>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -849,21 +945,43 @@ function Faq() {
   )
 }
 
+/** The closing call: the gift drops in once more, closed this time, above the last button. */
 function FinalCta() {
+  const section = useRef<HTMLElement>(null)
+  const closed = useRef(0)
+  const [scene, setScene] = useState<{ still: boolean; compact: boolean } | null>(null)
+  const [active, setActive] = useState(false)
+  useEffect(() => {
+    const probe = document.createElement('canvas')
+    if (probe.getContext('webgl2') || probe.getContext('webgl')) {
+      setScene({ still: window.matchMedia('(prefers-reduced-motion: reduce)').matches, compact: window.innerWidth < 768 })
+    }
+    const el = section.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => setActive(e.isIntersecting), { threshold: 0.3 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
   return (
-    <section className="relative overflow-hidden border-t border-neutral-200/80 py-28 text-center dark:border-neutral-800">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="drift-c absolute top-1/2 left-1/2 h-72 w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-purple-400/25 via-pink-400/20 to-blue-400/20 blur-3xl dark:from-purple-500/15 dark:via-pink-500/10 dark:to-blue-500/10" />
+    <section ref={section} className="relative overflow-hidden border-t border-neutral-200/80 pt-10 pb-28 text-center dark:border-neutral-800">
+      <div aria-hidden="true" className="relative mx-auto h-[300px] w-full max-w-xl sm:h-[360px]">
+        {scene && (
+          <Suspense fallback={null}>
+            <GiftScene progress={closed} still={scene.still} active={active} compact={scene.compact} layout="center" />
+          </Suspense>
+        )}
       </div>
-      <Reveal className="relative flex flex-col items-center gap-6">
-        <h2 className="font-display text-5xl leading-none sm:text-6xl">
-          Your next <span className="font-editorial text-6xl sm:text-7xl">celebration</span> starts here
+      <div className="relative flex flex-col items-center gap-6">
+        <h2 className="font-display text-[clamp(44px,7vw,112px)] leading-[0.9] tracking-[-0.01em]">
+          Your next <span className="font-editorial text-[1.2em] text-purple-600 dark:text-purple-300">celebration</span>
+          <br />
+          starts here
         </h2>
         <p className="max-w-md text-[15px] text-neutral-600 dark:text-neutral-400">Sign in with Google or your email. No passwords, no forms to fight with.</p>
-        <a href={START_HREF} data-cursor="Let's go ✨" className={`inline-flex min-h-12 items-center px-7 text-[15px] ${primaryButton}`}>
+        <a href={START_HREF} data-magnetic data-cursor="Let's go ✨" className={`inline-flex min-h-14 items-center px-8 text-base ${primaryButton}`}>
           Create my wishlist
         </a>
-      </Reveal>
+      </div>
     </section>
   )
 }
