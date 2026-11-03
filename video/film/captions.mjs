@@ -13,8 +13,13 @@ const LINES = {
   7: 'The money lands straight in your bank, and you say thank you in one tap.',
   8: 'GiftMe. Wishlists your friends can actually give to.',
   9: 'And find your people on GiftMe, so you never miss their big day.',
+  '7a': 'The money lands straight in your bank,',
+  '7b': 'and you say thank you in one tap.',
 }
 const seg = JSON.parse(readFileSync(new URL('../audio/vo-segments.json', import.meta.url)))
 const ts = (s) => new Date(s * 1000).toISOString().slice(11, 23)
 console.log('WEBVTT\n')
-for (const v of VO) console.log(`${ts(v.at)} --> ${ts(v.at + seg['l' + v.line].dur + 0.3)}\n${LINES[v.line]}\n`)
+for (const v of VO) {
+  const dur = v.clip ? v.clip[1] - v.clip[0] : seg['l' + v.line].dur
+  console.log(`${ts(v.at)} --> ${ts(v.at + dur + 0.3)}\n${LINES[v.line + (v.part ?? '')]}\n`)
+}

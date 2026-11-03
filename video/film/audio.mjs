@@ -14,12 +14,13 @@ const hz = (m) => 440 * Math.pow(2, (m - 69) / 12)
 let seed = 7
 const noise = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2147483648 - 1)
 const at = (id) => SCENES.find((s) => s.id === id).from
+const len = (id) => SCENES.find((s) => s.id === id).dur
 
 // Where the music plays and how hard.
 const DROP = at('intro') + 2 * BEAT // the logo hit
 function section(t) {
   if (t < at('chaos')) return { drums: 0.7, keys: 0.8, bass: 0.6, lp: 1 }
-  if (t < at('intro')) return { drums: 0.75, keys: 0.6, bass: 0.6, lp: 0.25 + 0.75 * (1 - (t - at('chaos')) / 4) }
+  if (t < at('intro')) return { drums: 0.75, keys: 0.6, bass: 0.6, lp: 0.25 + 0.75 * (1 - (t - at('chaos')) / len('chaos')) }
   if (t < DROP) return { drums: 0, keys: 0, bass: 0, lp: 1 }
   if (t < DUR - 1.5) return { drums: 1, keys: 1, bass: 1, lp: 1 }
   return { drums: 0, keys: 0, bass: 0, lp: 1 }
@@ -106,10 +107,11 @@ console.log('music', DUR.toFixed(2) + 's')
 writeWav('out/sfx.wav', renderCues(CUES, DUR))
 console.log('sfx', CUES.length, 'cues')
 
-// Voice: each line on its beat.
+// Voice: each line on its beat (a `clip` plays part of a take, with short fades at the cut).
 const inputs = VO.flatMap((v) => ['-i', `audio/vo/l${v.line}.wav`])
-const chains = VO.map((v, i) => `[${i}:a]aformat=sample_rates=48000:channel_layouts=mono,adelay=${Math.round(v.at * 1000)}[v${i}]`).join(';')
+const trim = (v) => (v.clip ? `atrim=${v.clip[0]}:${v.clip[1]},asetpts=PTS-STARTPTS,afade=t=in:d=0.02,afade=t=out:st=${(v.clip[1] - v.clip[0] - 0.04).toFixed(3)}:d=0.04,` : '')
+const chains = VO.map((v, i) => `[${i}:a]${trim(v)}aformat=sample_rates=48000:channel_layouts=mono,adelay=${Math.round(v.at * 1000)}[v${i}]`).join(';')
 execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, '-filter_complex',
   `${chains};${VO.map((_, i) => `[v${i}]`).join('')}amix=inputs=${VO.length}:normalize=0,apad,atrim=0:${DUR},highpass=f=80,acompressor=threshold=0.1:ratio=3:attack=5:release=120,pan=stereo|c0=c0|c1=c0[out]`,
   '-map', '[out]', '-ar', '48000', 'out/voice.wav'])
-console.log('voice', VO.map((v) => `L${v.line}@${v.at.toFixed(2)}`).join(' '))
+console.log('voice', VO.map((v) => `L${v.line}${v.part ?? ''}@${v.at.toFixed(2)}`).join(' '))
