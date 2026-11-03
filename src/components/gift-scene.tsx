@@ -34,7 +34,7 @@ const ITEMS = [
 export default function GiftScene(props: SceneProps) {
   return (
     <Canvas
-      dpr={[1, props.compact ? 1.5 : 2]}
+      dpr={[1, props.compact ? 2.5 : 2]}
       frameloop={props.active && !props.still ? 'always' : 'demand'}
       camera={{ position: [0, 0.9, props.layout === 'center' ? 7 : props.compact ? 9.6 : 8.2], fov: 34 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}

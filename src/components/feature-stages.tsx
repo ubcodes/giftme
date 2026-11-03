@@ -14,7 +14,7 @@ type SceneSpec = { ms: number; h: string; path: string; label: string; Scene: (p
 const SCENES: Record<SceneName, SceneSpec> = {
   add: { ms: 7600, h: 'h-[400px] sm:h-[380px]', path: 'giftme.website/dashboard/w/wedding', label: 'A shop link turns into a gift on the list', Scene: AddGiftScene },
   search: { ms: 9800, h: 'h-[440px]', path: 'giftme.website/dashboard/w/wedding', label: 'Searching shops and adding a result', Scene: SearchScene },
-  share: { ms: 5600, h: 'h-[460px] sm:h-[380px]', path: 'giftme.website/dashboard/w/wedding', label: 'Sharing the wishlist link in a chat', Scene: ShareScene },
+  share: { ms: 5600, h: 'h-[540px] sm:h-[380px]', path: 'giftme.website/dashboard/w/wedding', label: 'Sharing the wishlist link in a chat', Scene: ShareScene },
   give: { ms: 6200, h: 'h-[560px] sm:h-[400px]', path: 'giftme.website/w/amaka/wedding', label: 'A friend chips in toward a gift', Scene: GiveScene },
   friends: { ms: 7200, h: 'h-[470px] sm:h-[420px]', path: 'giftme.website/dashboard/friends', label: 'Finding friends from your contacts and following one', Scene: FriendsScene },
   thanks: { ms: 5800, h: 'h-[440px] sm:h-[400px]', path: 'giftme.website/dashboard/w/wedding', label: 'The gift lands and a thank-you goes out', Scene: ThanksScene },

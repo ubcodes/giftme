@@ -724,36 +724,66 @@ function OccasionVideo({ id }: { id: string }) {
 }
 
 /**
- * Occasions as a strip of 3D cards. On big screens the section pins and scrolling down slides
- * the strip sideways; on phones it's a swipeable row.
+ * Occasions as a strip of 3D cards. The section pins and scrolling down slides the strip
+ * sideways, on phones as well as big screens: the pinned stretch is exactly as long as the
+ * strip, so the cards move one pixel per pixel scrolled. With reduced motion it stays a
+ * swipeable row.
  */
 function Occasions() {
   const section = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
-  useScrollVar(section, { start: 0, end: -1.4 })
+  const [pinned, setPinned] = useState(false)
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    setPinned(true)
+    const el = section.current
+    if (!el) return
+    let dist = 0
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const r = el.getBoundingClientRect()
+      const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - window.innerHeight)))
+      el.style.setProperty('--s', p.toFixed(4))
+    }
     const measure = () => {
-      const el = track.current
-      if (el && section.current) section.current.style.setProperty('--dist', String(Math.max(0, el.scrollWidth - el.clientWidth + 48)))
+      const t = track.current
+      if (!t) return
+      dist = Math.max(0, t.scrollWidth - t.clientWidth + 48)
+      el.style.setProperty('--dist', String(dist))
+      el.style.height = `calc(100svh + ${dist}px)`
+      update()
+    }
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update)
     }
     measure()
+    window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', measure)
+    }
   }, [])
   return (
-    <section ref={section} className="relative border-t border-neutral-200/80 lg:h-[240vh] dark:border-neutral-800" style={{ '--s': 0, '--dist': 0 } as React.CSSProperties}>
-      <div className="flex flex-col justify-center gap-12 py-24 lg:sticky lg:top-0 lg:h-screen lg:py-0">
+    <section ref={section} className="relative border-t border-neutral-200/80 dark:border-neutral-800" style={{ '--s': 0, '--dist': 0 } as React.CSSProperties}>
+      <div className={`flex flex-col justify-center gap-12 ${pinned ? 'sticky top-0 h-[100svh]' : 'py-24'}`}>
         <SectionTitle kicker="Occasions" title="For whatever you're" accent="celebrating" />
         <div
           ref={track}
-          className="-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-6 [perspective:1400px] [scrollbar-width:none] sm:-mx-8 sm:px-8 lg:overflow-visible lg:[transform:translateX(calc(var(--s)*var(--dist)*-1px))]"
+          className={`-mx-5 flex gap-5 px-5 pb-6 [perspective:1400px] sm:-mx-8 sm:px-8 ${
+            pinned
+              ? 'overflow-visible [transform:translateX(calc(var(--s)*var(--dist)*-1px))]'
+              : 'snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]'
+          }`}
         >
           {OCCASIONS.map((o, i) => (
             <a
               key={o.id}
               href={START_HREF}
               data-cursor={`Start a ${o.label.toLowerCase()} list`}
-              className="group relative flex h-[380px] w-[280px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[28px] border border-white/70 bg-neutral-900 p-6 text-white shadow-[0_30px_60px_-30px_rgb(88_28_135/0.45)] transition-transform duration-500 [transform:rotateY(-10deg)_translateZ(0)] [transform-style:preserve-3d] hover:[transform:rotateY(0deg)_translateZ(40px)] sm:w-[320px] dark:border-white/10"
+              className="group relative flex h-[min(380px,52svh)] w-[280px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[28px] border border-white/70 bg-neutral-900 p-6 text-white shadow-[0_30px_60px_-30px_rgb(88_28_135/0.45)] transition-transform duration-500 [transform:rotateY(-10deg)_translateZ(0)] [transform-style:preserve-3d] hover:[transform:rotateY(0deg)_translateZ(40px)] sm:w-[320px] dark:border-white/10"
             >
               <OccasionVideo id={o.id} />
               {/* Keeps the words readable over any frame, with a hint of brand purple. */}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { ErrorText, Field } from '@/components/ui'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/ui'
 import { lookupAccountFn, savePayoutAccountFn } from '@/server/fns/owner'
@@ -70,14 +70,7 @@ export function PayoutForm({
   return (
     <form onSubmit={save} className="mt-5 flex flex-col gap-4">
       <Field label="Bank">
-        <select className={inputClass} value={bankCode} onChange={(e) => setBankCode(e.target.value)} required>
-          <option value="">Choose your bank</option>
-          {banks.map((b) => (
-            <option key={`${b.code}-${b.name}`} value={b.code}>
-              {b.name}
-            </option>
-          ))}
-        </select>
+        <BankPicker banks={banks} value={bankCode} onChange={setBankCode} />
       </Field>
       <Field label="Account number">
         <input
@@ -107,5 +100,109 @@ export function PayoutForm({
         )}
       </div>
     </form>
+  )
+}
+
+// The banks most people use, shown first before anything is typed. Matched against Paystack's names.
+const POPULAR = ['opay', 'moniepoint', 'palmpay', 'kuda', 'access bank', 'guaranty trust', 'zenith', 'first bank', 'united bank for africa', 'wema', 'fidelity', 'stanbic', 'sterling', 'union bank', 'ecobank', 'first city monument']
+// Short names people actually type.
+const ALIASES: Record<string, string> = { gtb: 'guaranty trust', gtbank: 'guaranty trust', uba: 'united bank for africa', fcmb: 'first city monument', firstbank: 'first bank', stanbic: 'stanbic ibtc' }
+
+/**
+ * A searchable bank list. Paystack returns hundreds of banks, which as a plain dropdown
+ * fills a phone screen; here you type a few letters ("gt", "opay") and pick from a short list.
+ */
+function BankPicker({ banks, value, onChange }: { banks: { name: string; code: string }[]; value: string; onChange: (code: string) => void }) {
+  const id = useId()
+  const box = useRef<HTMLDivElement>(null)
+  const chosen = banks.find((b) => b.code === value)
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) {
+      const top = POPULAR.map((p) => banks.find((b) => b.name.toLowerCase().includes(p))).filter((b): b is (typeof banks)[number] => !!b)
+      return [...new Map(top.map((b) => [b.code, b])).values()]
+    }
+    const terms = [q, ALIASES[q.replace(/\s+/g, '')]].filter(Boolean) as string[]
+    const hits = banks.filter((b) => terms.some((t) => b.name.toLowerCase().includes(t)))
+    // Names that start with what was typed come first.
+    return hits.sort((a, b) => Number(!a.name.toLowerCase().startsWith(q)) - Number(!b.name.toLowerCase().startsWith(q))).slice(0, 40)
+  }, [banks, query])
+
+  useEffect(() => {
+    if (!open) return
+    const close = (e: PointerEvent) => !box.current?.contains(e.target as Node) && setOpen(false)
+    document.addEventListener('pointerdown', close)
+    return () => document.removeEventListener('pointerdown', close)
+  }, [open])
+
+  function pick(code: string) {
+    onChange(code)
+    setQuery('')
+    setOpen(false)
+  }
+
+  return (
+    <div ref={box} className="relative">
+      <input
+        className={inputClass}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        aria-autocomplete="list"
+        autoComplete="off"
+        placeholder={chosen ? chosen.name : 'Search your bank, e.g. OPay or GTBank'}
+        value={open ? query : (chosen?.name ?? '')}
+        onFocus={() => {
+          setOpen(true)
+          setActive(0)
+        }}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setActive(0)
+          setOpen(true)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setActive((a) => Math.min(a + 1, results.length - 1))
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setActive((a) => Math.max(a - 1, 0))
+          } else if (e.key === 'Enter' && open && results[active]) {
+            e.preventDefault()
+            pick(results[active].code)
+          } else if (e.key === 'Escape') setOpen(false)
+        }}
+      />
+      {/* Keeps the form's "required" check working without the native select. */}
+      <input tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-0" value={value} onChange={() => {}} required />
+      {open && (
+        <ul
+          id={`${id}-list`}
+          role="listbox"
+          className="mt-1.5 max-h-64 overflow-y-auto overscroll-contain rounded-xl border border-neutral-200/80 bg-white p-1 shadow-xl shadow-purple-950/10 dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          {!query && <li className="px-3 pt-1.5 pb-1 text-xs text-neutral-500">Popular banks · type to search all {banks.length}</li>}
+          {results.map((b, i) => (
+            <li
+              key={`${b.code}-${b.name}`}
+              role="option"
+              aria-selected={b.code === value}
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => pick(b.code)}
+              onMouseEnter={() => setActive(i)}
+              className={`cursor-pointer rounded-lg px-3 py-2.5 text-[15px] ${i === active ? 'bg-purple-500/10' : ''} ${b.code === value ? 'text-purple-700 dark:text-purple-300' : ''}`}
+            >
+              {b.name}
+            </li>
+          ))}
+          {results.length === 0 && <li className="px-3 py-2.5 text-sm text-neutral-500">No bank matches “{query}”</li>}
+        </ul>
+      )}
+    </div>
   )
 }

@@ -278,3 +278,13 @@ dialog::backdrop {
   from { transform: translateX(-100%); }
   to { transform: translateX(300%); }
 }
+
+/* iPhone zooms the page in when you tap a field whose text is under 16px, and stays zoomed on
+   the next screen. On touch screens every field gets at least 16px, so that never happens. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
