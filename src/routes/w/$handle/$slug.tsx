@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { BankNeededNotice } from '@/components/onboarding'
 import { SocialLinks } from '@/components/friends'
 import { ThemeToggle } from '@/components/theme'
+import { MyPagesLink } from '@/components/visitor-nav'
 import { Avatar, Bar, Dialog, ErrorText, Field, Glow, ItemArt, Logo, Photo, StarIcon, glassCard } from '@/components/ui'
 import { contributeFn, getPublicWishlistFn, reserveFn } from '@/server/fns/guest'
 import type { PublicItem } from '@/server/gifts'
@@ -71,12 +72,15 @@ function PublicWishlist() {
       <Glow />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <nav className="flex items-center justify-between pt-6">
-          <Link to="/w/$handle" params={{ handle: owner.handle }} className="flex items-center gap-3">
-            <Avatar src={owner.avatarUrl} name={owner.displayName} size={44} />
-            <span className="text-sm text-neutral-600 dark:text-neutral-400">{owner.displayName}</span>
-          </Link>
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar src={owner.avatarUrl} name={owner.displayName} size={44} zoom />
+            <Link to="/w/$handle" params={{ handle: owner.handle }} className="truncate text-sm text-neutral-600 hover:underline dark:text-neutral-400">
+              {owner.displayName}
+            </Link>
+          </div>
           <div className="flex items-center gap-2">
             <SocialLinks socials={owner.socials} className="hidden sm:flex" />
+            <MyPagesLink me={viewer?.user} ownerHandle={owner.handle} />
             <ThemeToggle />
           </div>
         </nav>
@@ -84,7 +88,7 @@ function PublicWishlist() {
         <header className="flex flex-col gap-5 pt-14 pb-12 sm:pt-20">
           {wishlist.coverUrl && (
             <div className="mb-4 aspect-[16/5] max-h-72 w-full overflow-hidden rounded-3xl bg-neutral-200/60 shadow-sm dark:bg-neutral-800/60">
-              <Photo src={wishlist.coverUrl} lazy={false} />
+              <Photo src={wishlist.coverUrl} position={wishlist.coverPos} lazy={false} />
             </div>
           )}
           <div className="flex max-w-2xl flex-col gap-5">

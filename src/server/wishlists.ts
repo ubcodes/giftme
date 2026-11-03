@@ -20,6 +20,7 @@ export type WishlistRow = {
   event_date: string | null
   intro: string | null
   cover_url: string | null
+  cover_pos: number
   created_at: number
 }
 
@@ -88,15 +89,16 @@ export type WishlistInput = {
   eventDate: string | null
   intro: string | null
   coverUrl: string | null
+  coverPos: number
 }
 
 export async function createWishlist(ownerId: string, input: WishlistInput) {
   const id = newId('wl')
   const slug = await uniqueSlug(ownerId, input.title)
   await run(
-    `INSERT INTO wishlists (id, owner_id, slug, occasion, title, event_date, intro, cover_url, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, ownerId, slug, input.occasion, input.title, input.eventDate, input.intro, input.coverUrl, Date.now()],
+    `INSERT INTO wishlists (id, owner_id, slug, occasion, title, event_date, intro, cover_url, cover_pos, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, ownerId, slug, input.occasion, input.title, input.eventDate, input.intro, input.coverUrl, input.coverPos, Date.now()],
   )
   return { id, slug }
 }
@@ -111,9 +113,9 @@ export async function updateWishlist(ownerId: string, wishlistId: string, input:
   await ownedWishlist(ownerId, wishlistId)
   const slug = input.slug ? await uniqueSlug(ownerId, input.slug, wishlistId) : undefined
   await run(
-    `UPDATE wishlists SET occasion = ?, title = ?, event_date = ?, intro = ?, cover_url = ?, slug = COALESCE(?, slug)
+    `UPDATE wishlists SET occasion = ?, title = ?, event_date = ?, intro = ?, cover_url = ?, cover_pos = ?, slug = COALESCE(?, slug)
      WHERE id = ? AND owner_id = ?`,
-    [input.occasion, input.title, input.eventDate, input.intro, input.coverUrl, slug ?? null, wishlistId, ownerId],
+    [input.occasion, input.title, input.eventDate, input.intro, input.coverUrl, input.coverPos, slug ?? null, wishlistId, ownerId],
   )
 }
 

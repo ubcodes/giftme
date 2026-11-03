@@ -41,6 +41,7 @@ const wishlistInput = z.object({
     .nullable(),
   intro: z.string().trim().max(1000).nullable(),
   coverUrl: z.string().max(2000).nullable(),
+  coverPos: z.number().int().min(0).max(100).default(50),
 })
 
 const itemInput = z.object({

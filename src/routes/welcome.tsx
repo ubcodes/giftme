@@ -68,8 +68,8 @@ function Welcome() {
                   Where should <span className="font-editorial text-6xl sm:text-7xl">gifts</span> go?
                 </h1>
                 <p className="mx-auto mt-3 max-w-md text-[15px] text-neutral-600 dark:text-neutral-400">
-                  Friends can only send money once you add the bank account it should land in. Paystack sends each gift straight there; GiftMe
-                  never holds it.
+                  Add the bank account your gifts should land in. Every naira friends send goes straight to it, and GiftMe never holds your
+                  money.
                 </p>
               </>
             )}

@@ -41,7 +41,9 @@ export function Bar({ percent }: { percent: number }) {
   )
 }
 
-export function Avatar({ src, name, size = 44 }: { src: string | null | undefined; name: string; size?: number }) {
+/** A round profile picture. With `zoom`, pressing it opens the photo full size. */
+export function Avatar({ src, name, size = 44, zoom = false }: { src: string | null | undefined; name: string; size?: number; zoom?: boolean }) {
+  const [open, setOpen] = useState(false)
   const initials = name
     .split(/\s+/)
     .map((p) => p[0])
@@ -49,7 +51,7 @@ export function Avatar({ src, name, size = 44 }: { src: string | null | undefine
     .slice(0, 2)
     .join('')
     .toUpperCase()
-  return (
+  const face = (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 opacity-75 blur-sm" />
       {src ? (
@@ -64,6 +66,46 @@ export function Avatar({ src, name, size = 44 }: { src: string | null | undefine
       )}
     </div>
   )
+  if (!zoom || !src) return face
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={`See ${name}'s photo`}
+        className="shrink-0 cursor-zoom-in rounded-full transition-transform hover:scale-105"
+      >
+        {face}
+      </button>
+      {open && <PhotoViewer src={src} name={name} onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
+/** A photo shown big over a dimmed page; Esc, the close button or a press outside closes it. */
+function PhotoViewer({ src, name, onClose }: { src: string; name: string; onClose: () => void }) {
+  const ref = useModal(onClose)
+  return (
+    <dialog
+      ref={ref}
+      aria-label={`${name}'s photo`}
+      onClick={(e) => e.target === e.currentTarget && ref.current?.close()}
+      className="m-auto overflow-visible bg-transparent p-0 backdrop:bg-black/75 backdrop:backdrop-blur-sm"
+    >
+      <figure className="flex flex-col items-center gap-3">
+        <img src={src} alt={name} className="max-h-[78vh] max-w-[min(560px,calc(100vw-32px))] rounded-3xl object-contain shadow-2xl" />
+        <figcaption className="font-display text-2xl text-white">{name}</figcaption>
+      </figure>
+      <button
+        type="button"
+        onClick={() => ref.current?.close()}
+        aria-label="Close"
+        className="fixed top-5 right-5 grid size-11 cursor-pointer place-items-center rounded-full bg-white/15 text-xl text-white backdrop-blur hover:bg-white/25"
+      >
+        ×
+      </button>
+    </dialog>
+  )
 }
 
 export function GiftIcon({ size = 24 }: { size?: number }) {
@@ -76,7 +118,20 @@ export function GiftIcon({ size = 24 }: { size?: number }) {
 }
 
 /** An image that shimmers while it loads, then fades in. Fills its parent. */
-export function Photo({ src, alt = '', lazy = true, className = '' }: { src: string; alt?: string; lazy?: boolean; className?: string }) {
+export function Photo({
+  src,
+  alt = '',
+  lazy = true,
+  className = '',
+  position,
+}: {
+  src: string
+  alt?: string
+  lazy?: boolean
+  className?: string
+  /** Vertical focus of a cropped photo, 0 (top) to 100 (bottom). */
+  position?: number
+}) {
   const [loaded, setLoaded] = useState(false)
   const ref = useRef<HTMLImageElement>(null)
   // A cached image can finish before React attaches onLoad.
@@ -92,6 +147,7 @@ export function Photo({ src, alt = '', lazy = true, className = '' }: { src: str
         loading={lazy ? 'lazy' : 'eager'}
         onLoad={() => setLoaded(true)}
         onError={() => setLoaded(true)}
+        style={position === undefined ? undefined : { objectPosition: `50% ${position}%` }}
         className={`size-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>

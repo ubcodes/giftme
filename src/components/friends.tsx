@@ -91,9 +91,7 @@ export function PersonCard({ person, onFollowChange }: { person: Person; onFollo
   return (
     <li className={`flex flex-col gap-4 rounded-2xl p-4 sm:p-5 ${glassCard}`}>
       <div className="flex items-center gap-3.5">
-        <Link to="/w/$handle" params={{ handle: person.handle }} className="shrink-0">
-          <Avatar src={person.avatarUrl} name={person.displayName} size={52} />
-        </Link>
+        <Avatar src={person.avatarUrl} name={person.displayName} size={52} zoom />
         <div className="min-w-0 flex-1">
           <Link to="/w/$handle" params={{ handle: person.handle }} className="font-display block truncate text-2xl leading-tight hover:underline">
             {person.displayName}

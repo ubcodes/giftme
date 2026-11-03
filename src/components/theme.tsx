@@ -5,6 +5,20 @@ const STORAGE_KEY = 'theme'
 /** Runs before paint so the page never flashes the wrong theme. */
 export const themeInitScript = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}})()`
 
+/** Whether the page is in dark mode right now, following the toggle as it changes. */
+export function useIsDark() {
+  const [dark, setDark] = useState(false)
+  useEffect(() => {
+    const root = document.documentElement
+    const read = () => setDark(root.classList.contains('dark'))
+    read()
+    const watch = new MutationObserver(read)
+    watch.observe(root, { attributes: true, attributeFilter: ['class'] })
+    return () => watch.disconnect()
+  }, [])
+  return dark
+}
+
 export function ThemeToggle() {
   const [dark, setDark] = useState<boolean | null>(null)
 

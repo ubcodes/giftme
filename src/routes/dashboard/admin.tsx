@@ -12,7 +12,10 @@ export const Route = createFileRoute('/dashboard/admin')({
   component: Admin,
 })
 
-/** How GiftMe is doing: people, lists and gifts. Only emails in ADMIN_EMAILS can open it. */
+/**
+ * How GiftMe is doing: people, lists and gifts. Only emails in ADMIN_EMAILS can open it, and
+ * nothing links here: the owner bookmarks /dashboard/admin. Everyone else gets a 404.
+ */
 function Admin() {
   const { totals: t, byDay, recent } = Route.useLoaderData()
   const peak = Math.max(1, ...byDay.map((d) => d.n))

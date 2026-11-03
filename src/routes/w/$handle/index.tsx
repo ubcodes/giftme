@@ -1,6 +1,7 @@
 import { Link, createFileRoute, notFound } from '@tanstack/react-router'
 import { FollowButton, SocialLinks } from '@/components/friends'
 import { ThemeToggle } from '@/components/theme'
+import { MyPagesLink } from '@/components/visitor-nav'
 import { Avatar, Glow, Logo, glassCard } from '@/components/ui'
 import { shareMeta } from '@/lib/share'
 import { getPublicProfileFn } from '@/server/fns/guest'
@@ -35,6 +36,7 @@ export const Route = createFileRoute('/w/$handle/')({
 
 function Profile() {
   const data = Route.useLoaderData()
+  const { viewer } = Route.useRouteContext()
   if (!data.found) return null
   return (
     <div className="relative min-h-screen overflow-x-clip">
@@ -42,10 +44,13 @@ function Profile() {
       <div className="relative mx-auto max-w-3xl px-5 sm:px-8">
         <nav className="flex items-center justify-between pt-6">
           <Logo />
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <MyPagesLink me={viewer?.user} ownerHandle={data.owner.handle} />
+            <ThemeToggle />
+          </div>
         </nav>
         <header className="flex flex-col items-center gap-4 pt-16 pb-10 text-center">
-          <Avatar src={data.owner.avatarUrl} name={data.owner.displayName} size={96} />
+          <Avatar src={data.owner.avatarUrl} name={data.owner.displayName} size={96} zoom />
           <h1 className="font-display text-5xl">{data.owner.displayName}</h1>
           <SocialLinks socials={data.owner.socials} className="justify-center" />
           {data.follow && <FollowButton handle={data.owner.handle} following={data.follow.following} />}

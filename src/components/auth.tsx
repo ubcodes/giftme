@@ -3,6 +3,7 @@ import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { devSignInFn, devSignOutFn } from '@/server/fns/account'
 import { inputClass, primaryButton } from '@/lib/ui'
+import { useIsDark } from './theme'
 import { ErrorText, Field } from './ui'
 
 // Client half of the auth module (server half: src/server/auth.ts).
@@ -21,6 +22,27 @@ const appearance = {
   },
 }
 
+// The same card in the site's dark colours, so sign-in doesn't flash a white box at night.
+const darkAppearance = {
+  ...appearance,
+  variables: {
+    ...appearance.variables,
+    colorBackground: '#16111f',
+    colorForeground: '#f5f3f7',
+    colorMutedForeground: '#a3a3a3',
+    colorInput: '#211a2c',
+    colorInputForeground: '#f5f3f7',
+    colorNeutral: '#ffffff',
+    colorBorder: '#3a2f48',
+    colorShadow: '#000000',
+    colorModalBackdrop: '#0b0710',
+  },
+}
+
+function useAppearance() {
+  return useIsDark() ? darkAppearance : appearance
+}
+
 export function AuthProvider({
   mode,
   publishableKey,
@@ -30,15 +52,17 @@ export function AuthProvider({
   publishableKey: string | null
   children: React.ReactNode
 }) {
+  const look = useAppearance()
   if (mode !== 'clerk' || !publishableKey) return <>{children}</>
   return (
-    <ClerkProvider publishableKey={publishableKey} appearance={appearance} afterSignOutUrl="/">
+    <ClerkProvider publishableKey={publishableKey} appearance={look} afterSignOutUrl="/">
       {children}
     </ClerkProvider>
   )
 }
 
 export function SignInPanel({ mode, redirectTo }: { mode: Mode; redirectTo: string }) {
+  const look = useAppearance()
   if (mode === 'clerk') {
     return (
       <SignIn
@@ -46,7 +70,7 @@ export function SignInPanel({ mode, redirectTo }: { mode: Mode; redirectTo: stri
         withSignUp
         forceRedirectUrl={redirectTo}
         signUpForceRedirectUrl={redirectTo}
-        appearance={appearance}
+        appearance={look}
       />
     )
   }

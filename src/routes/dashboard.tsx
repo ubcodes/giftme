@@ -83,11 +83,6 @@ function AccountMenu() {
           <MenuLink to="/dashboard/settings" onClick={() => setOpen(false)}>
             Profile & payouts
           </MenuLink>
-          {viewer.isAdmin && (
-            <MenuLink to="/dashboard/admin" onClick={() => setOpen(false)}>
-              Numbers (admin)
-            </MenuLink>
-          )}
           <button
             type="button"
             onClick={() => signOut()}
@@ -101,7 +96,7 @@ function AccountMenu() {
   )
 }
 
-function MenuLink({ to, onClick, children }: { to: '/dashboard' | '/dashboard/friends' | '/dashboard/settings' | '/dashboard/admin'; onClick: () => void; children: React.ReactNode }) {
+function MenuLink({ to, onClick, children }: { to: '/dashboard' | '/dashboard/friends' | '/dashboard/settings'; onClick: () => void; children: React.ReactNode }) {
   return (
     <Link to={to} onClick={onClick} className="block rounded-lg px-3 py-2 hover:bg-neutral-900/5 dark:hover:bg-neutral-100/5">
       {children}

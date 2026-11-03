@@ -1,5 +1,5 @@
 import { useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { OCCASIONS, occasion as findOccasion, type OccasionId } from '@/lib/occasions'
 import { inputClass, primaryButton } from '@/lib/ui'
 import { setAvatarFn } from '@/server/fns/account'
@@ -12,6 +12,7 @@ export type WishlistValues = {
   eventDate: string | null
   intro: string | null
   coverUrl: string | null
+  coverPos: number
 }
 
 export function WishlistForm({
@@ -31,6 +32,7 @@ export function WishlistForm({
   const [eventDate, setEventDate] = useState(initial?.eventDate ?? '')
   const [intro, setIntro] = useState(initial?.intro ?? '')
   const [cover, setCover] = useState(initial?.coverUrl ?? null)
+  const [coverPos, setCoverPos] = useState(initial?.coverPos ?? 50)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [avatar, setAvatar] = useState(owner.avatarUrl)
@@ -59,6 +61,7 @@ export function WishlistForm({
       eventDate: eventDate || null,
       intro: intro.trim() || null,
       coverUrl: cover,
+      coverPos,
     })
     setBusy(false)
     if (err) setError(err)
@@ -126,9 +129,16 @@ export function WishlistForm({
         <span className="-mt-1 text-xs text-neutral-500 dark:text-neutral-400">
           A wide picture across the top of your page, like a couple's photo for a wedding. Skip it if you like.
         </span>
-        {cover && <img src={cover} alt="" className="aspect-[16/5] w-full rounded-xl object-cover" />}
+        {cover && <BannerFramer src={cover} pos={coverPos} onChange={setCoverPos} />}
         <div className="flex items-center gap-2">
-          <UploadButton folder="covers" onUploaded={setCover} label={cover ? 'Change banner' : 'Add a banner'} />
+          <UploadButton
+            folder="covers"
+            onUploaded={(url) => {
+              setCover(url)
+              setCoverPos(50)
+            }}
+            label={cover ? 'Change banner' : 'Add a banner'}
+          />
           {cover && (
             <button type="button" onClick={() => setCover(null)} className="cursor-pointer text-sm text-neutral-500 underline underline-offset-4">
               Remove
@@ -141,6 +151,64 @@ export function WishlistForm({
         {busy ? 'Saving…' : submitLabel}
       </button>
     </form>
+  )
+}
+
+/**
+ * The banner as guests will see it. Drag it up or down (or use the arrow keys) to choose which
+ * part of the photo shows; `pos` is the vertical focus, 0 = top, 100 = bottom.
+ */
+function BannerFramer({ src, pos, onChange }: { src: string; pos: number; onChange: (pos: number) => void }) {
+  const box = useRef<HTMLDivElement>(null)
+  const img = useRef<HTMLImageElement>(null)
+  const drag = useRef<{ y: number; pos: number; spare: number } | null>(null)
+  const clamp = (v: number) => Math.round(Math.min(100, Math.max(0, v)))
+
+  function start(e: React.PointerEvent) {
+    const b = box.current
+    const i = img.current
+    if (!b || !i?.naturalWidth) return
+    // How many pixels of photo are hidden above and below the frame.
+    const spare = Math.max(1, (b.clientWidth * i.naturalHeight) / i.naturalWidth - b.clientHeight)
+    drag.current = { y: e.clientY, pos, spare }
+    b.setPointerCapture(e.pointerId)
+  }
+  function move(e: React.PointerEvent) {
+    const d = drag.current
+    if (d) onChange(clamp(d.pos - ((e.clientY - d.y) / d.spare) * 100))
+  }
+  function key(e: React.KeyboardEvent) {
+    const step = e.shiftKey ? 10 : 2
+    if (e.key === 'ArrowUp') onChange(clamp(pos - step))
+    else if (e.key === 'ArrowDown') onChange(clamp(pos + step))
+    else return
+    e.preventDefault()
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div
+        ref={box}
+        role="slider"
+        tabIndex={0}
+        aria-label="Banner position"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pos}
+        aria-valuetext={pos < 34 ? 'showing the top' : pos > 66 ? 'showing the bottom' : 'showing the middle'}
+        onPointerDown={start}
+        onPointerMove={move}
+        onPointerUp={() => (drag.current = null)}
+        onPointerCancel={() => (drag.current = null)}
+        onKeyDown={key}
+        className="group relative aspect-[16/5] w-full cursor-grab touch-none overflow-hidden rounded-xl outline-none select-none focus-visible:ring-2 focus-visible:ring-purple-500/60 active:cursor-grabbing"
+      >
+        <img ref={img} src={src} alt="" draggable={false} className="size-full object-cover" style={{ objectPosition: `50% ${pos}%` }} />
+        <span className="pointer-events-none absolute right-2 bottom-2 rounded-full bg-black/55 px-2.5 py-1 text-xs text-white backdrop-blur transition-opacity group-active:opacity-0">
+          ↕ Drag to adjust
+        </span>
+      </div>
+    </div>
   )
 }
 

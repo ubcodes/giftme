@@ -124,6 +124,8 @@ const MIGRATIONS = [
    )`,
   `CREATE INDEX IF NOT EXISTS idx_users_phone_hash ON users(phone_hash)`,
   `CREATE INDEX IF NOT EXISTS idx_users_email_hash ON users(email_hash)`,
+  // Which part of the banner shows: 0 = top, 100 = bottom.
+  `ALTER TABLE wishlists ADD COLUMN cover_pos INTEGER NOT NULL DEFAULT 50`,
 ]
 
 async function migrate() {

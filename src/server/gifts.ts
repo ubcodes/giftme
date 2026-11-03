@@ -100,6 +100,7 @@ export async function publicWishlist(handle: string, slug: string) {
       eventDate: wl.event_date,
       intro: wl.intro,
       coverUrl: wl.cover_url,
+      coverPos: wl.cover_pos ?? 50,
     },
     items: await publicItems(await listItems(wl.id, false)),
   }
@@ -358,6 +359,7 @@ export async function ownerWishlistDetail(ownerId: string, wishlistId: string) {
       eventDate: wl.event_date,
       intro: wl.intro,
       coverUrl: wl.cover_url,
+      coverPos: wl.cover_pos ?? 50,
     },
     items: withProgress.map(({ item, progress }) => ({
       id: item.id,
@@ -432,6 +434,7 @@ export async function ownerOverview(ownerId: string) {
     occasion: wl.occasion,
     eventDate: wl.event_date,
     coverUrl: wl.cover_url,
+      coverPos: wl.cover_pos ?? 50,
     items: itemCounts.get(wl.id) ?? 0,
     gifts: Number(byList.get(wl.id)?.n ?? 0),
     raisedNgn: raised[i],

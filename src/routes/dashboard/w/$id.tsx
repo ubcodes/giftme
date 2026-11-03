@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -319,6 +319,7 @@ function Editor() {
               eventDate: wishlist.eventDate,
               intro: wishlist.intro,
               coverUrl: wishlist.coverUrl,
+              coverPos: wishlist.coverPos,
             }}
             owner={user}
             submitLabel="Save"
@@ -347,8 +348,21 @@ function OwnerItemRow({
   onChanged: () => void
 }) {
   const [menu, setMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [star, setStar] = useState(item.mostWanted)
+  // The menu closes when you click anywhere else or press Esc.
+  useEffect(() => {
+    if (!menu) return
+    const away = (e: PointerEvent) => menuRef.current?.contains(e.target as Node) || setMenu(false)
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setMenu(false)
+    document.addEventListener('pointerdown', away)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('pointerdown', away)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [menu])
   useEffect(() => setStar(item.mostWanted), [item.mostWanted])
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
 
@@ -381,7 +395,7 @@ function OwnerItemRow({
       aria-roledescription="Draggable gift"
       className={`relative flex cursor-grab touch-manipulation flex-col gap-3 rounded-2xl p-3.5 select-none active:cursor-grabbing sm:flex-row sm:items-center ${glassCard} ${
         item.hidden ? 'opacity-60' : ''
-      } ${isDragging ? 'z-30 scale-[1.01] shadow-xl shadow-purple-500/10 ring-1 ring-purple-300/60' : ''}`}
+      } ${isDragging ? 'z-30 scale-[1.01] shadow-xl shadow-purple-500/10 ring-1 ring-purple-300/60' : ''} ${menu ? 'z-20' : ''}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
         <span aria-hidden="true" className="text-neutral-300 dark:text-neutral-600">
@@ -433,12 +447,18 @@ function OwnerItemRow({
         <button type="button" onClick={onEdit} className={`min-h-9 px-3.5 text-sm ${secondaryButton}`}>
           Edit
         </button>
-        <div className="relative">
-          <button type="button" onClick={() => setMenu((v) => !v)} aria-label="More actions" className={`min-h-9 px-3 text-sm ${secondaryButton}`}>
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setMenu((v) => !v)}
+            aria-label="More actions"
+            aria-expanded={menu}
+            className={`min-h-9 px-3 text-sm ${secondaryButton}`}
+          >
             •••
           </button>
           {menu && (
-            <div className={`absolute right-0 z-20 mt-2 w-56 rounded-2xl bg-white/95 p-1.5 text-sm dark:bg-neutral-900/95 ${glassCard}`}>
+            <div className="absolute right-0 z-20 mt-2 w-56 rounded-2xl border border-neutral-200/80 bg-white p-1.5 text-sm shadow-xl shadow-purple-950/10 dark:border-neutral-800 dark:bg-neutral-900">
               <MenuButton onClick={() => flag({ hidden: !item.hidden })}>{item.hidden ? 'Show to guests' : 'Hide from guests'}</MenuButton>
               {item.kind === 'gift' && (
                 <MenuButton onClick={() => flag({ received: !item.received })}>{item.received ? 'Not received yet' : 'Mark as received'}</MenuButton>
