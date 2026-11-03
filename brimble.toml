@@ -24,7 +24,7 @@ memory = "1gb"
 
 [services.giftme.env]
 NODE_ENV = "production"
-PUBLIC_SITE_URL = "https://giftme.website"
+PUBLIC_SITE_URL = "https://www.giftme.website"
 IMAGE_STORE = "database"
 BLNK_URL = "https://giftme-blnk-blnk-test.brimble.app"
 USD_NGN_RATE = "1500"
