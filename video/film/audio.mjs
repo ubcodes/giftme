@@ -19,6 +19,7 @@ const len = (id) => SCENES.find((s) => s.id === id).dur
 // Where the music plays and how hard.
 const DROP = at('intro') + 2 * BEAT // the logo hit
 function section(t) {
+  if (t < at('drop')) return { drums: 0, keys: 0, bass: 0, lp: 1 } // the opener has its own cues below
   if (t < at('chaos')) return { drums: 0.7, keys: 0.8, bass: 0.6, lp: 1 }
   if (t < at('intro')) return { drums: 0.75, keys: 0.6, bass: 0.6, lp: 0.25 + 0.75 * (1 - (t - at('chaos')) / len('chaos')) }
   if (t < DROP) return { drums: 0, keys: 0, bass: 0, lp: 1 }
@@ -53,8 +54,10 @@ const MOTIF = [74, 77, 81, 79, 77, 74, 72, 74] // D5 F5 A5 G5 F5 D5 C5 D5
 
 const bar = 4 * BEAT, s16 = BEAT / 4, swing = 0.035
 const keysBus = [new Float32Array(N), new Float32Array(N)]
-for (let b = 0; b * bar < DUR; b++) {
-  const t0 = b * bar, chord = CHORDS[b % 4], root = ROOTS[b % 4]
+// Bars count from the gift drop, so the groove starts on its first beat.
+const T0 = at('drop')
+for (let b = -Math.ceil(T0 / bar); T0 + b * bar < DUR; b++) {
+  const t0 = T0 + b * bar, chord = CHORDS[((b % 4) + 4) % 4], root = ROOTS[((b % 4) + 4) % 4]
   for (let k = 0; k < 16; k++) {
     const t = t0 + k * s16 + (k % 2 ? swing : 0), sec = section(t)
     if (sec.drums) {
@@ -75,6 +78,13 @@ for (let b = 0; b * bar < DUR; b++) {
     add(keysBus[0], t, 0.7, marimba(m), 0.9 * sec.lp); add(keysBus[1], t + 0.012, 0.7, marimba(m), 0.75 * sec.lp)
   })
 }
+// The opener: a held chord under "Introducing", a hit on the logo, a clap build into the drop.
+for (const [t, chord, gain] of [[0.0, [50, 53, 57, 60], 0.9], [0.5, [62, 65, 69], 0.45], [1.0, [46, 53, 57, 62, 65], 1.5], [2.0, [48, 55, 60, 64], 0.9]])
+  for (const [i, m] of chord.entries()) { add(keysBus[0], t + i * 0.01, 1.4, epiano(m), gain); add(keysBus[1], t + i * 0.013, 1.4, epiano(m), gain) }
+both(1.0, 1.2, kick, 1.2)
+both(1.0, 0.9, logDrum(26), 1.0)
+MOTIF.slice(0, 4).forEach((m, i) => add(keysBus[0], 1.12 + i * 0.12, 0.8, marimba(m + 12), 0.5))
+for (let k = 0; k < 8; k++) both(at('drop') - 1 + k * s16, 0.3, clap(), 0.12 + k * 0.07, k % 2 ? 0.2 : -0.2)
 // Tom fills into the big scene changes.
 for (const id of ['share', 'bank']) for (let i = 0; i < 4; i++) both(at(id) - BEAT + i * s16, 0.4, tom(50 - i * 3), 0.8, i % 2 ? 0.3 : -0.3)
 // The drop on the logo, and the last chord ringing out.

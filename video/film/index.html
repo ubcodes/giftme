@@ -244,25 +244,67 @@ function pageView(win, cssX0, scroll, s) {
   }
 }
 
+// ---------------------------------------------------------------- S0: introducing (title card, music only)
+
+const OPEN = { x: 1430, y: 770, size: 380 }
+function sOpen(t) {
+  // Night violet with the brand aurora. A gift rises on the right and opens on the logo hit;
+  // its light then opens like an iris onto the first shot, where the next gift is already falling.
+  g.fillStyle = '#120d1c'; g.fillRect(0, 0, 1920, 1080)
+  const up = ease.outCubic(prog(t, 0, 0.9)), hit = 1.0
+  for (const [x, y, r, col, a] of [[1450 + t * 40, 300, 980, '168,85,247', 0.42], [380 - t * 30, 880, 860, '236,72,153', 0.3], [1700, 1000, 720, '59,130,246', 0.28]]) {
+    const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${col},${a * up})`); gr.addColorStop(1, `rgba(${col},0)`)
+    g.fillStyle = gr; g.fillRect(0, 0, 1920, 1080)
+  }
+  const push = 1 + 0.04 * ease.inOutCubic(prog(t, 0, 3))
+  g.save(); g.translate(960, 540); g.scale(push, push); g.translate(-960, -540)
+  const rise = spring(t - 0.05, 120, 17), open = spring(t - hit, 60, 9) * clamp((t - hit) * 3)
+  gift({ x: OPEN.x, y: OPEN.y + (1 - rise) * 760, size: OPEN.size, ry: 0.45 + t * 0.32, rx: -0.3, open, shadowY: OPEN.y })
+  flush3D()
+  // light pouring out of the open box, growing into the transition
+  const mouth = OPEN.y - OPEN.size * 0.85
+  const glow = clamp((t - hit) * 2.5) * (0.5 + 0.5 * clamp((t - 1.9) / 0.6) ** 2)
+  if (glow > 0) {
+    g.save(); g.globalCompositeOperation = 'lighter'
+    const gr = g.createRadialGradient(OPEN.x, mouth, 0, OPEN.x, mouth, 460); gr.addColorStop(0, `rgba(255,214,246,${0.55 * glow})`); gr.addColorStop(1, 'rgba(255,214,246,0)')
+    g.fillStyle = gr; g.fillRect(0, 0, 1920, 1080); g.restore()
+  }
+  kinetic('INTRODUCING', 166, 452, t - 0.3, { size: 34, fam: BODY, color: 'rgba(255,255,255,0.72)', stagger: 0.03 })
+  const s = 1.2, wl = (measure('Gift', 230, DISPLAY, '500') + measure('me', 270, SCRIPT) + 8) * s
+  if (t >= hit - 0.02) logo(150 + wl / 2, 690, s, t - hit, 1, '#fff')
+  text('giftme.website', 168, 790, { size: 30, color: 'rgba(255,255,255,0.6)', alpha: clamp((t - 1.6) * 4) })
+  g.restore()
+  // the iris
+  const cx = 960 + (OPEN.x - 960) * push, cy = 540 + (mouth - 540) * push
+  const ir = 1800 * clamp((t - 2.4) / 0.6) ** 3
+  if (ir > 0) {
+    g.save(); g.beginPath(); g.arc(cx, cy, ir, 0, Math.PI * 2); g.clip()
+    background(t); g.save(); sDrop(t - 3.0); flush3D(); g.restore(); g.restore()
+    const rim = g.createRadialGradient(cx, cy, Math.max(0, ir - 90), cx, cy, ir + 30)
+    rim.addColorStop(0, 'rgba(255,240,250,0)'); rim.addColorStop(0.75, 'rgba(255,240,250,0.85)'); rim.addColorStop(1, 'rgba(255,240,250,0)')
+    g.fillStyle = rim; g.fillRect(0, 0, 1920, 1080)
+  }
+}
+
 // ---------------------------------------------------------------- S1: the gift drop
 
 function sDrop(t) {
   const floor = 860, X = 1300
   // Hero gift: already falling on frame one, lands on the first beat.
-  const fall = clamp(t / 0.5), landed = t >= 0.5
-  const y = landed ? floor : 120 + (floor - 120) * fall * fall
+  const fall = clamp((t + 0.6) / 1.1), landed = t >= 0.5
+  const y = landed ? floor : -300 + (floor + 300) * fall * fall
   const u = t - 0.5
   const squash = landed ? 0.22 * Math.exp(-7 * u) * Math.cos(16 * u) : -0.06 * fall
-  const open = spring(t - 1.0, 60, 9) * clamp((t - 1.0) * 3)
-  const exitT = prog(t, 4.15, 4.5)
+  const open = spring(t - 0.85, 60, 9) * clamp((t - 0.85) * 3)
+  const exitT = prog(t, 3.65, 4.0)
   g.save(); g.translate(0, -ease.inQuad(exitT) * 1300)
 
   // Out of the open box, what each word is about: birthday, then wedding, then baby shower.
   const mouth = floor - 280
   const WAVES = [
-    [1.02, [['cake', 'land', 250, { lx: 960 }], ['balloon', 'float', 230, { dx: -150, variant: '#ec4899' }], ['balloon', 'float', 205, { dx: 170, variant: '#a855f7', d: 0.12 }], ['candles', 'camera', 170, { dx: -620, d: 0.06 }]]],
-    [2.08, [['champagne', 'land', 200, { lx: 1660 }], ['flowers', 'camera', 220, { dx: -460, d: 0.05, rx: -0.75 }], ['rings', 'float', 230, { dx: 40, d: 0.1 }]]],
-    [3.27, [['booties', 'land', 210, { lx: 1130, lz: -200 }], ['bottle', 'float', 180, { dx: -110, d: 0.08 }], ['rattle', 'camera', 190, { dx: 560, d: 0.04 }]]],
+    [0.87, [['cake', 'land', 250, { lx: 960 }], ['balloon', 'float', 230, { dx: -150, variant: '#ec4899' }], ['balloon', 'float', 205, { dx: 170, variant: '#a855f7', d: 0.12 }], ['candles', 'camera', 170, { dx: -620, d: 0.06 }]]],
+    [1.62, [['champagne', 'land', 200, { lx: 1660 }], ['flowers', 'camera', 220, { dx: -460, d: 0.05, rx: -0.75 }], ['rings', 'float', 230, { dx: 40, d: 0.1 }]]],
+    [2.46, [['booties', 'land', 210, { lx: 1130, lz: -200 }], ['bottle', 'float', 180, { dx: -110, d: 0.08 }], ['rattle', 'camera', 190, { dx: 560, d: 0.04 }]]],
   ]
   const front = []
   WAVES.forEach(([w0, list]) => list.forEach(([kind, path, size, o], i) => {
@@ -290,10 +332,10 @@ function sDrop(t) {
   g.restore()
 
   // The words, on the voice.
-  const L = [['Birthdays.', 0.75, 1.95], ['Weddings.', 2.06, 3.13], ['Baby showers.', 3.25, 4.2]]
+  const L = [['Birthdays.', 0.6, 1.52], ['Weddings.', 1.6, 2.36], ['Baby showers.', 2.46, 3.6]]
   L.forEach(([w, t0, out], i) => kinetic(w, 130, 560, t - t0, { size: i === 2 ? 168 : 196, out: out - t0, color: INK }))
   // A small eyebrow that stays
-  text('FOR EVERY CELEBRATION', 138, 360, { size: 30, color: MUTED, alpha: clamp((t - 0.6) * 3) * (1 - exitT) })
+  text('FOR EVERY CELEBRATION', 138, 360, { size: 30, color: MUTED, alpha: clamp((t - 0.5) * 3) * (1 - exitT) })
 }
 
 // ---------------------------------------------------------------- S2: everyone asks
@@ -345,7 +387,7 @@ function swapContext(cx, fn) { const keep = g; g = cx; try { fn() } finally { g 
 
 function sChaos(t) {
   const blurOut = prog(t, 2.05, 2.45)
-  const pull = Math.pow(prog(t, 4.0, 4.5), 2.2)
+  const pull = Math.pow(prog(t, 3.6, 4.0), 2.2)
   const cx = 960, cy = 540
   BUBBLES.forEach(([name, msg, x, y, col], i) => {
     const t0 = i * 0.25, s = spring(t - t0, 260, 17)
@@ -360,10 +402,10 @@ function sChaos(t) {
   })
   // The question, word by word on the voice.
   g.save(); const zp = 1 - pull; g.translate(cx, cy); g.scale(zp, zp); g.translate(-cx, -cy); g.globalAlpha = 1 - pull
-  words([['So', 2.22], ['what', 2.38], ['do', 2.55], ['you', 2.68]], 960, 500, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
-  words([['actually', 2.9, { fam: SCRIPT, size: 210, color: ACCENT, weight: '400' }], ['want?', 3.32]], 960, 690, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
+  words([['So', 2.2], ['what', 2.34], ['do', 2.6], ['you', 2.74]], 960, 500, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
+  words([['actually', 2.92, { fam: SCRIPT, size: 210, color: ACCENT, weight: '400' }], ['want?', 3.42]], 960, 690, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
   g.restore()
-  if (pull > 0.6) gift({ x: cx, y: cy + 60, size: 120 * prog(t, 4.15, 4.5), ry: t * 3, color: ACCENT })
+  if (pull > 0.6) gift({ x: cx, y: cy + 60, size: 120 * prog(t, 3.75, 4.0), ry: t * 3, color: ACCENT })
   flush3D()
 }
 
@@ -372,12 +414,12 @@ function sChaos(t) {
 const LOGO = { x: 960, y: 610 }
 // Where (and how big) the app's own nav logo sits on the first frame of the next shot.
 const MATCH = { x: 950, y: 536, s: 0.36 }
-function logo(x, y, s, t, alpha = 1) {
+function logo(x, y, s, t, alpha = 1, ink = INK) {
   // "Gift" in the display face, "me" in the script with the brand gradient, like the site.
   g.save(); g.globalAlpha *= alpha; g.translate(x, y); g.scale(s, s)
   const wGift = measure('Gift', 230, DISPLAY, '500'), wMe = measure('me', 270, SCRIPT)
   const total = wGift + wMe + 8, x0 = -total / 2
-  kinetic('Gift', x0, 0, t, { size: 230, weight: '500', stagger: 0.04, k: 300, d: 22 })
+  kinetic('Gift', x0, 0, t, { size: 230, weight: '500', stagger: 0.04, k: 300, d: 22, color: ink })
   g.save()
   const grad = g.createLinearGradient(x0 + wGift, 0, x0 + total, 0)
   grad.addColorStop(0, '#a855f7'); grad.addColorStop(0.55, '#ec4899'); grad.addColorStop(1, '#3b82f6')
@@ -387,14 +429,13 @@ function logo(x, y, s, t, alpha = 1) {
 }
 function sIntro(t) {
   // The next shot fades up underneath, so the logo lands on the app's own nav logo.
-  if (t > 2.7) { g.save(); g.globalAlpha = ease.inOutCubic(prog(t, 2.7, 3.0)); sAdd(0); g.restore() }
+  if (t > 1.7) { g.save(); g.globalAlpha = ease.inOutCubic(prog(t, 1.7, 2.0)); sAdd(0); g.restore() }
   const hit = 1.0
-  const shrink = ease.inOutCubic(prog(t, 2.55, 3.0))
+  const shrink = ease.inOutCubic(prog(t, 1.55, 2.0))
   // The little gift from the last scene grows and moves aside for the logo.
   const gx = 960 - spring(t - hit + 0.35, 200, 22) * 570, gs = 120 + spring(t, 120, 16) * 60
   gift({ x: gx + shrink * 200, y: 660 - shrink * 60, size: gs * (1 - shrink * 0.6), ry: t * 2.4, rx: -0.4, alpha: 1 - shrink, shadowY: 680 })
   flush3D()
-  text('INTRODUCING', 960, 360, { size: 30, color: MUTED, align: 'center', alpha: clamp((t - 0.45) * 4) * (1 - prog(t, 2.4, 2.6)) })
   if (t >= hit - 0.02) {
     // Match cut: the logo shrinks toward where the app's nav logo sits in the next shot.
     const tx = 960 + (MATCH.x - 960) * shrink, ty = LOGO.y + (MATCH.y - LOGO.y) * shrink
@@ -600,7 +641,7 @@ function chat(w, h, t) {
     text('giftme.website/w/amaka/wedding', bx + 18, 458, { size: 16, color: '#0369a1' })
     g.restore()
   }
-  const msgs = [[2.3, 'Aunty Ngozi', 'Ahhh congratulations!! 🎉', '#7c3aed', 520], [3.0, 'Chioma', 'Sending something now 🎁', '#e11d48', 610]]
+  const msgs = [[1.9, 'Aunty Ngozi', 'Ahhh congratulations!! 🎉', '#7c3aed', 520], [2.4, 'Chioma', 'Sending something now 🎁', '#e11d48', 610]]
   for (const [t0, name, m, col, y] of msgs) {
     const p = spring(t - t0, 280, 20); if (p <= 0) continue
     g.save(); g.translate(22, y); g.scale(p, p); g.globalAlpha = clamp(p * 3)
@@ -637,7 +678,7 @@ function sShare(t) {
   }
   const ph = spring(t - 0.85, 140, 20)
   if (ph > 0) phoneFrame(330, 90 + (1 - ph) * 900, 1, (w, h) => chat(w, h, t))
-  caption([['One link,', 1.35], ['for everyone.', 1.6, { fam: SCRIPT, size: 140, color: ACCENT, weight: '400' }]], 1000, 470, t, 3.85)
+  caption([['One link,', 1.35], ['for everyone.', 1.6, { fam: SCRIPT, size: 140, color: ACCENT, weight: '400' }]], 1000, 470, t, 2.85)
 }
 
 // ---------------------------------------------------------------- S6: friends give (real guest page, phone)
@@ -665,7 +706,7 @@ function giveDialog(w, h, t, t0) {
   g.save(); rrect(g, dx, dy, db.w * ss, db.h * ss, 22); g.clip()
   g.drawImage(IMG['phone-give-0'], db.x * 2, db.y * 2, db.w * 2, db.h * 2, dx, dy, db.w * ss, db.h * ss)
   // the real filled-in form, revealed field by field
-  const bands = [[218, 264, 1.4], [405, 440, 1.55], [490, 528, 1.7], [565, 640, 1.85], [648, 704, 1.4]]
+  const bands = [[218, 264, 1.15], [405, 440, 1.3], [490, 528, 1.45], [565, 640, 1.6], [648, 704, 1.15]]
   for (const [y0, y1, tb] of bands) {
     const p = prog(t, tb, tb + 0.12); if (p <= 0) continue
     g.save(); g.beginPath(); g.rect(dx, top + y0 * ss + up, db.w * ss * p, (y1 - y0) * ss); g.clip()
@@ -675,7 +716,7 @@ function giveDialog(w, h, t, t0) {
   statusBar(w)
   const chip = BOX['give.chip20'], sub = BOX['give.submit']
   const chipC = { x: (chip.x + chip.w / 2) * ss, y: top + (chip.y + chip.h / 2) * ss }
-  if (t > 1.3) { rrect(g, chip.x * ss, top + chip.y * ss, chip.w * ss, chip.h * ss, chip.h * ss / 2); g.lineWidth = 3; g.strokeStyle = ACCENT; g.stroke() }
+  if (t > 1.05) { rrect(g, chip.x * ss, top + chip.y * ss, chip.w * ss, chip.h * ss, chip.h * ss / 2); g.lineWidth = 3; g.strokeStyle = ACCENT; g.stroke() }
   return { chip: chipC, submit: { x: (sub.x + sub.w / 2) * ss, y: top + 676 * ss } }
 }
 function thanksScreen(w, h, t, t0) {
@@ -705,23 +746,23 @@ function friendCard([name, what, item, col, x, y, tilt], p) {
   text(`${name} ${what}`, 98, 46, { size: 23, color: INK }); text(item, 98, 76, { size: 17, color: MUTED }); g.restore()
 }
 function sGive(t) {
-  const pull = ease.inOutCubic(prog(t, 2.45, 3.05))
-  const exit = prog(t, 5.1, 5.5)
+  const pull = ease.inOutCubic(prog(t, 2.15, 2.75))
+  const exit = prog(t, 4.6, 5.0)
   const ps = 1 - pull * 0.16, px = PHONE.x - pull * 40 + 30, py = PHONE.y + pull * 70
   // friends' gifts around the phone, at different depths
-  FRIENDS.forEach((f, i) => friendCard(f, spring(t - (2.8 + i * 0.25), 220, 18) * (1 - exit)))
+  FRIENDS.forEach((f, i) => friendCard(f, spring(t - (2.5 + i * 0.25), 220, 18) * (1 - exit)))
   g.save(); g.translate(0, ease.inQuad(exit) * -1200)
   phoneFrame(px, py, ps, (w, h) => {
     const tapAt = guestScreen(w, h, t)
     let ctl = null
     if (t > 0.78) ctl = giveDialog(w, h, t, 0.8)
-    if (t > 2.15) thanksScreen(w, h, t, 2.15)
+    if (t > 1.85) thanksScreen(w, h, t, 1.85)
     tap(tapAt.x, tapAt.y, t - 0.7, 'Chioma')
-    if (ctl) { tap(ctl.chip.x, ctl.chip.y, t - 1.3); tap(ctl.submit.x, ctl.submit.y, t - 2.05) }
+    if (ctl) { tap(ctl.chip.x, ctl.chip.y, t - 1.05); tap(ctl.submit.x, ctl.submit.y, t - 1.75) }
   })
   g.restore()
   // Reserve: a gift a friend is buying themselves.
-  const rp = spring(t - 3.1, 200, 18) * (1 - exit)
+  const rp = spring(t - 2.85, 200, 18) * (1 - exit)
   if (rp > 0) {
     g.save(); g.translate(1520, 760); g.scale(0.6 + 0.4 * rp, 0.6 + 0.4 * rp); g.rotate(0.03 * (1 - rp)); g.globalAlpha = clamp(rp * 3)
     card(-300, -110, 600, 220, 30, '#fff', [60, 26, 0.2])
@@ -732,15 +773,15 @@ function sGive(t) {
     text('A friend is buying this one', -80, 98, { size: 17, color: MUTED })
     g.restore()
   }
-  caption([['Any amount.', 0.35]], 1240, 300, t, 5.1)
-  caption([['Or reserve it.', 2.85, { fam: SCRIPT, size: 150, color: ACCENT, weight: '400' }]], 1240, 470, t, 5.1)
+  caption([['Any amount.', 0.35]], 1240, 300, t, 4.6)
+  caption([['Or reserve it.', 2.6, { fam: SCRIPT, size: 150, color: ACCENT, weight: '400' }]], 1240, 470, t, 4.6)
 }
 
 // ---------------------------------------------------------------- S7: money lands, say thanks
 
 function sBank(t) {
-  const swap = ease.inOutCubic(prog(t, 2.8, 3.25))
-  const exit = prog(t, 5.7, 6.0)
+  const swap = ease.inOutCubic(prog(t, 2.05, 2.5))
+  const exit = prog(t, 4.2, 4.5)
   // Left: the number, counting up.
   const n = Math.round(591000 * ease.outCubic(prog(t, 0.3, 1.5)) / 1000) * 1000
   g.save(); g.translate(0, -swap * 900)
@@ -757,7 +798,7 @@ function sBank(t) {
   g.restore()
   g.restore()
   // Credit alert
-  const al = spring(t - 1.0, 260, 22) * (1 - prog(t, 2.8, 3.05))
+  const al = spring(t - 1.0, 260, 22) * (1 - prog(t, 2.0, 2.25))
   if (al > 0) {
     g.save(); g.translate(0, (1 - al) * -260); g.globalAlpha = clamp(al * 2)
     card(1000, 40, 820, 140, 34, 'rgba(255,255,255,0.97)', [50, 20, 0.22])
@@ -776,12 +817,12 @@ function sBank(t) {
     g.fillStyle = PAGE_BG; g.fillRect(win.x - 20, win.y - 20, win.w + 40, win.h + 40)
     g.drawImage(IMG['owner-full'], wb.x * 2, wb.y * 2, wb.w * 2, (win.h / s) * 2, win.x, win.y, win.w, win.h)
     const bx = win.x + (st.x - wb.x) * s, by = win.y + (st.y - wb.y) * s
-    if (t > 3.7) { rrect(g, bx - 4, by - 2, st.w * s + 8, st.h * s + 4, (st.h * s) / 2); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#d6d3d1'; g.stroke(); text('Thanked ✓', bx + (st.w * s) / 2, by + (st.h * s) / 2 + 6, { size: 14 * s, color: '#44403c', align: 'center' }) }
+    if (t > 2.95) { rrect(g, bx - 4, by - 2, st.w * s + 8, st.h * s + 4, (st.h * s) / 2); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#d6d3d1'; g.stroke(); text('Thanked ✓', bx + (st.w * s) / 2, by + (st.h * s) / 2 + 6, { size: 14 * s, color: '#44403c', align: 'center' }) }
     g.restore()
-    const cur = at(t, [{ t: 2.95, x: 1500, y: 900 }, { t: 3.6, x: bx + st.w * s * 0.5, y: by + st.h * s * 0.6, d: 0.5 }, { t: 4.65, x: bx + 120, y: by + 160 }])
-    cursor(cur.x, cur.y, 'Amaka', ACCENT, press(t, 3.65))
+    const cur = at(t, [{ t: 2.2, x: 1500, y: 900 }, { t: 2.85, x: bx + st.w * s * 0.5, y: by + st.h * s * 0.6, d: 0.5 }, { t: 3.9, x: bx + 120, y: by + 160 }])
+    cursor(cur.x, cur.y, 'Amaka', ACCENT, press(t, 2.9))
     // the note flies off
-    const f = prog(t, 3.75, 4.55)
+    const f = prog(t, 3.0, 3.8)
     if (f > 0 && f < 1) {
       const ex = bx + f * 500, ey = by - Math.sin(f * Math.PI * 0.9) * 420 - f * 200
       g.save(); g.translate(ex, ey); g.rotate(-0.4 + f * 0.8); g.scale(1 + f * 0.3, 1 + f * 0.3); g.globalAlpha = 1 - prog(f, 0.75, 1)
@@ -789,16 +830,16 @@ function sBank(t) {
       g.beginPath(); g.arc(0, 6, 14, 0, Math.PI * 2); g.fillStyle = ACCENT; g.fill(); text('♥', 0, 13, { size: 18, color: '#fff', align: 'center' }); g.restore()
     }
     g.restore()
-    caption([['Say thank you,', 3.05], ['in one tap.', 3.3, { fam: SCRIPT, size: 130, color: ACCENT, weight: '400' }]], 140, 830, t, 5.7)
+    caption([['Say thank you,', 2.3], ['in one tap.', 2.55, { fam: SCRIPT, size: 130, color: ACCENT, weight: '400' }]], 140, 830, t, 4.2)
   }
-  if (swap < 1) caption([['Straight to', 0.35, { size: 84 }], ['your bank.', 0.55, { fam: SCRIPT, size: 120, color: ACCENT, weight: '400' }]], 120, 760, t, 2.8)
+  if (swap < 1) caption([['Straight to', 0.35, { size: 84 }], ['your bank.', 0.55, { fam: SCRIPT, size: 120, color: ACCENT, weight: '400' }]], 120, 760, t, 2.05)
 }
 
 // ---------------------------------------------------------------- S7b: find your people (real Friends page)
 
 const SOCIALS = [['Instagram', '@amaka.obi', '#e1306c', 230, 150], ['TikTok', '@kemicooks', '#111111', 560, 235], ['X', '@ife_writes', '#111111', 860, 130], ['Substack', 'ifewrites', '#ff6719', 300, 1000]]
 function sFriends(t) {
-  const enter = spring(t, 150, 22), recede = ease.inOutCubic(prog(t, 2.2, 2.65)), exit = prog(t, 4.7, 5.0)
+  const enter = spring(t, 150, 22), recede = ease.inOutCubic(prog(t, 2.2, 2.65)), exit = prog(t, 4.2, 4.5)
   const k = 1 - recede * 0.42, s = PS * k
   const win = { x: WIN.x + recede * (80 - WIN.x), y: WIN.y + recede * (330 - WIN.y) + (1 - enter) * 900 - ease.inQuad(exit) * 1200, w: WIN.w * k, h: WIN.h * k }
   const view = { x: (cx) => win.x + (cx - CSS_X0) * s, y: (cy) => win.y + BAR + cy * s }
@@ -838,7 +879,7 @@ function sFriends(t) {
     text(handle, -tw / 2 + 72, 9, { size: 26, color: INK }); g.restore()
   })
   caption([['Find your people.', 0.3]], 110, 1000, t, 2.2)
-  caption([['Never miss', 2.3, { size: 84 }], ['their big day.', 2.55, { fam: SCRIPT, size: 120, color: ACCENT, weight: '400' }]], 1140, 260, t, 4.7)
+  caption([['Never miss', 2.3, { size: 84 }], ['their big day.', 2.55, { fam: SCRIPT, size: 120, color: ACCENT, weight: '400' }]], 1140, 260, t, 4.2)
 }
 
 // ---------------------------------------------------------------- S8: end
@@ -855,23 +896,23 @@ function sEnd(t) {
   flush3D()
   // Logo on "GiftMe", then the tagline word by word.
   logo(960, 380, 0.82, t - 0.28)
-  words([['Wishlists', 1.15], ['your', 1.55], ['friends', 1.72], ['can', 1.98]], 960, 540, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
-  words([['actually', 2.2, { fam: SCRIPT, size: 116, color: ACCENT, weight: '400' }], ['give', 2.72], ['to.', 2.95]], 960, 650, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
-  const cp = spring(t - 3.5, 220, 18)
+  words([['Wishlists', 1.49], ['your', 2.15], ['friends', 2.45], ['can', 2.73]], 960, 540, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
+  words([['actually', 2.9, { fam: SCRIPT, size: 116, color: ACCENT, weight: '400' }], ['give', 3.33], ['to.', 3.61]], 960, 650, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
+  const cp = spring(t - 3.8, 220, 18)
   if (cp > 0) {
-    const pr = press(t, 4.3)
+    const pr = press(t, 4.6)
     g.save(); g.translate(960, 780); g.scale((0.6 + 0.4 * cp) * (1 - pr * 0.05), (0.6 + 0.4 * cp) * (1 - pr * 0.05)); g.globalAlpha = clamp(cp * 3)
     card(-300, -48, 600, 96, 48, ACCENT, [40, 16, 0.3]); text('Start your wishlist, it’s free', 0, 12, { size: 34, color: '#fff', align: 'center' })
     g.restore()
-    text('giftme.website', 960, 875, { size: 30, color: MUTED, align: 'center', alpha: clamp((t - 3.7) * 4) })
+    text('giftme.website', 960, 875, { size: 30, color: MUTED, align: 'center', alpha: clamp((t - 4.0) * 4) })
   }
-  const cur = at(t, [{ t: 3.4, x: 1500, y: 980 }, { t: 4.2, x: 1080, y: 790, d: 0.6 }])
-  if (t > 3.4) cursor(cur.x, cur.y, 'You', ACCENT, press(t, 4.3), clamp((t - 3.4) * 4))
+  const cur = at(t, [{ t: 3.7, x: 1500, y: 980 }, { t: 4.5, x: 1080, y: 790, d: 0.6 }])
+  if (t > 3.7) cursor(cur.x, cur.y, 'You', ACCENT, press(t, 4.6), clamp((t - 3.7) * 4))
 }
 
 // ---------------------------------------------------------------- the clock
 
-const DRAW = { drop: sDrop, chaos: sChaos, intro: sIntro, add: sAdd, share: sShare, give: sGive, bank: sBank, friends: sFriends, end: sEnd }
+const DRAW = { open: sOpen, drop: sDrop, chaos: sChaos, intro: sIntro, add: sAdd, share: sShare, give: sGive, bank: sBank, friends: sFriends, end: sEnd }
 function draw(t) {
   g.setTransform(K, 0, 0, K, 0, 0)
   background(t)

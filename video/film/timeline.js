@@ -7,39 +7,48 @@ export const BEAT = 60 / BPM
 export const W = 1920
 export const H = 1080
 
-// vo: which voice line plays and when, in the scene's own seconds. A list plays one line in parts:
-// `clip` is the part of the take to use (seconds into it), `part` names it for the captions.
+// vo: which voice line plays and when, in the scene's own seconds (none on the title opener).
 // cues: sound effects at local times. Types are the voices in the kit's sfx.mjs.
 export const SCENES = [
   {
+    // "Introducing GiftMe": a title card on music and sound only, opening into the gift drop.
+    id: 'open',
+    dur: 3.0,
+    cues: [
+      [0.05, 'swoosh', 0.35], [0.3, 'tick', 0.35], [0.42, 'tick', 0.25],
+      [1.0, 'impact', 1.0], [1.0, 'kick', 0.9], [1.02, 'pop', 0.6], [1.05, 'sparkle', 0.55],
+      [1.6, 'tick', 0.3], [2.0, 'riser', 0.55], [2.5, 'whoosh', 0.7],
+    ],
+  },
+  {
     id: 'drop',
-    dur: 4.5,
-    vo: { line: 1, at: 0.75 },
+    dur: 4.0,
+    vo: { line: 1, at: 0.6 },
     cues: [
       [0.0, 'swoosh', 0.5], [0.5, 'impact', 0.9], [0.5, 'kick', 0.7],
-      [1.0, 'pop', 0.8], [1.07, 'bubble', 0.5], [1.14, 'pop', 0.6], [1.21, 'bubble', 0.5],
-      [2.06, 'pop', 0.7], [2.13, 'bubble', 0.5], [2.2, 'pop', 0.6],
-      [3.25, 'pop', 0.7], [3.32, 'bubble', 0.5], [3.39, 'pop', 0.6], [3.46, 'bubble', 0.4],
-      [1.9, 'thump', 0.35], [2.35, 'thump', 0.3], [3.0, 'thump', 0.3], [3.9, 'thump', 0.3],
-      [4.15, 'whoosh', 0.7],
+      [0.85, 'pop', 0.8], [0.92, 'bubble', 0.5], [0.99, 'pop', 0.6], [1.06, 'bubble', 0.5],
+      [1.6, 'pop', 0.7], [1.67, 'bubble', 0.5], [1.74, 'pop', 0.6],
+      [2.44, 'pop', 0.7], [2.51, 'bubble', 0.5], [2.58, 'pop', 0.6], [2.65, 'bubble', 0.4],
+      [1.75, 'thump', 0.35], [2.2, 'thump', 0.3], [2.54, 'thump', 0.3], [3.09, 'thump', 0.3],
+      [3.65, 'whoosh', 0.7],
     ],
   },
   {
     id: 'chaos',
-    dur: 4.5,
-    vo: { line: 2, at: 0.15 },
+    dur: 4.0,
+    vo: { line: 2, at: 0.23 },
     cues: [
       [0.0, 'notify', 0.55], [0.25, 'pop', 0.5], [0.5, 'notify', 0.45], [0.75, 'pop', 0.5],
       [1.0, 'notify', 0.45], [1.25, 'pop', 0.5], [1.5, 'notify', 0.4], [1.75, 'pop', 0.45],
       [2.2, 'swoosh', 0.4], [2.9, 'tick', 0.6], [3.35, 'kick', 0.5],
-      [4.0, 'riser', 0.6], [4.15, 'whoosh', 0.6],
+      [3.55, 'riser', 0.6], [3.7, 'whoosh', 0.6],
     ],
   },
   {
     id: 'intro',
-    dur: 3.0,
+    dur: 2.0,
     vo: { line: 3, at: 0.4 },
-    cues: [[0.45, 'tick', 0.5], [1.0, 'impact', 1.0], [1.0, 'sparkle', 0.6], [2.62, 'swoosh', 0.5]],
+    cues: [[0.45, 'tick', 0.5], [1.0, 'impact', 1.0], [1.0, 'sparkle', 0.6], [1.62, 'swoosh', 0.5]],
   },
   {
     id: 'add',
@@ -60,51 +69,50 @@ export const SCENES = [
   },
   {
     id: 'share',
-    dur: 4.0,
+    dur: 3.0,
     vo: { line: 5, at: 0.4 },
-    cues: [[0.55, 'click', 0.8], [0.65, 'success', 0.45], [0.95, 'swoosh', 0.5], [1.3, 'notify', 0.5], [2.3, 'pop', 0.5], [3.0, 'notify', 0.45]],
+    cues: [[0.55, 'click', 0.8], [0.65, 'success', 0.45], [0.95, 'swoosh', 0.5], [1.3, 'notify', 0.5], [1.9, 'pop', 0.5], [2.4, 'notify', 0.45]],
   },
   {
     id: 'give',
-    dur: 5.5,
-    vo: { line: 6, at: 0.4 },
+    dur: 5.0,
+    vo: { line: 6, at: 0.25 },
     cues: [
       [0.0, 'tick', 0.5], [0.05, 'swoosh', 0.35], [0.7, 'click', 0.7], [0.8, 'swoosh', 0.3],
-      [1.3, 'click', 0.6], [1.4, 'key', 0.4], [1.55, 'key', 0.4], [1.7, 'key', 0.4], [1.85, 'key', 0.4],
-      [2.05, 'click', 0.8], [2.15, 'coin', 0.55], [2.2, 'drop', 0.5], [2.3, 'success', 0.5],
-      [2.8, 'pop', 0.5], [3.05, 'pop', 0.5], [3.3, 'pop', 0.5], [3.55, 'pop', 0.5],
-      [3.15, 'chime', 0.45], [5.1, 'whoosh', 0.45],
+      [1.05, 'click', 0.6], [1.15, 'key', 0.4], [1.3, 'key', 0.4], [1.45, 'key', 0.4], [1.6, 'key', 0.4],
+      [1.75, 'click', 0.8], [1.85, 'coin', 0.55], [1.9, 'drop', 0.5], [2.0, 'success', 0.5],
+      [2.5, 'pop', 0.5], [2.75, 'pop', 0.5], [3.0, 'pop', 0.5], [3.25, 'pop', 0.5],
+      [2.9, 'chime', 0.45], [4.6, 'whoosh', 0.45],
     ],
   },
   {
     id: 'bank',
-    dur: 6.0,
-    // split at the breath after "…in your bank,": the second half lands on the thank-you page
-    vo: [{ line: 7, at: 0.25, clip: [0, 1.66], part: 'a' }, { line: 7, at: 2.95, clip: [1.66, 3.47], part: 'b' }],
+    dur: 4.5,
+    vo: { line: 7, at: 0.25 },
     cues: [
       [0.3, 'riser', 0.25], [1.6, 'coin', 0.6], [1.0, 'notify', 0.8],
-      [2.95, 'swoosh', 0.4], [3.65, 'click', 0.8], [3.75, 'success', 0.5], [3.8, 'swoosh', 0.45],
-      [5.7, 'whoosh', 0.5],
+      [2.2, 'swoosh', 0.4], [2.9, 'click', 0.8], [3.0, 'success', 0.5], [3.05, 'swoosh', 0.45],
+      [4.2, 'whoosh', 0.5],
     ],
   },
   {
     id: 'friends',
-    dur: 5.0,
-    vo: { line: 9, at: 0.25 },
+    dur: 4.5,
+    vo: { line: 9, at: 0.55 },
     cues: [
       [0.0, 'swoosh', 0.4], ...keys(0.4, 1.0, 0.07), [1.05, 'pop', 0.5],
       [1.8, 'click', 0.8], [1.85, 'success', 0.4], [2.3, 'swoosh', 0.4], [2.45, 'pop', 0.55], [2.6, 'pop', 0.5],
-      [2.8, 'bubble', 0.45], [2.95, 'bubble', 0.45], [3.1, 'bubble', 0.45], [3.25, 'bubble', 0.45], [4.7, 'whoosh', 0.45],
+      [2.8, 'bubble', 0.45], [2.95, 'bubble', 0.45], [3.1, 'bubble', 0.45], [3.25, 'bubble', 0.45], [4.2, 'whoosh', 0.45],
     ],
   },
   {
     id: 'end',
-    dur: 6.5,
+    dur: 6.0,
     vo: { line: 8, at: 0.25 },
     cues: [
       [0.1, 'thump', 0.4], [0.3, 'impact', 1.0], [0.3, 'sparkle', 0.5],
       [0.55, 'thump', 0.35], [0.8, 'thump', 0.35], [1.05, 'thump', 0.3], [1.3, 'thump', 0.3],
-      [3.5, 'pop', 0.6], [4.3, 'click', 0.8], [4.4, 'sparkle', 0.55],
+      [3.8, 'pop', 0.6], [4.6, 'click', 0.8], [4.7, 'sparkle', 0.55],
     ],
   },
 ]
@@ -124,7 +132,7 @@ for (const s of SCENES) {
 }
 export const DUR = at
 
-export const VO = SCENES.flatMap((s) => [s.vo].flat().map((v) => ({ ...v, at: s.from + v.at })))
+export const VO = SCENES.flatMap((s) => [s.vo ?? []].flat().map((v) => ({ ...v, at: s.from + v.at })))
 
 export const CUES = SCENES.flatMap((s) => s.cues.map(([t, type, gain]) => ({ t: +(s.from + t).toFixed(3), type, gain })))
 
