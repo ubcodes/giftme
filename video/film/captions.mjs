@@ -7,7 +7,7 @@ const LINES = {
   1: 'Birthdays. Weddings. Baby showers.',
   2: 'And everyone asks the same thing… so what do you actually want?',
   3: 'Meet GiftMe.',
-  4: 'Paste the link from any shop, or just search for what you’d love.',
+  4: 'Paste a link from any shop, or just search for what you’d love.',
   5: 'Share one link with everyone.',
   6: 'Friends chip in any amount, or reserve a gift to buy it themselves.',
   7: 'The money lands straight in your bank, and you say thank you in one tap.',

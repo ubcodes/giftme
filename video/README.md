@@ -30,7 +30,7 @@ Tools live in the global kit at `~/.claude/skills/motion-reel/kit` (render, sfx,
    node film/audio.mjs
    node film/captions.mjs > ../public/video/giftme-film.vtt
    K=~/.claude/skills/motion-reel/kit
-   node $K/render.mjs --gpu --root .. --html film/index.html --w 1920 --h 1080 --fps 60 --sub 4 --dur 42.5 --out out/silent.mp4
+   node $K/render.mjs --gpu --root .. --html film/index.html --w 1920 --h 1080 --fps 60 --sub 4 --dur 42 --out out/silent.mp4
    VOICE_GAIN=1.7 MUSIC_GAIN=0.3 SFX_GAIN=1.1 bash $K/mix.sh out/silent.mp4 out/voice.wav out/music.wav out/sfx.wav out/final.mp4
    ```
    `--gpu` matters: the 3D gifts (film/gifts3d.js, three.js) are ~50x slower in the software renderer.

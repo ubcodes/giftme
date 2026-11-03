@@ -303,8 +303,8 @@ function sDrop(t) {
   const mouth = floor - 280
   const WAVES = [
     [0.87, [['cake', 'land', 250, { lx: 960 }], ['balloon', 'float', 230, { dx: -150, variant: '#ec4899' }], ['balloon', 'float', 205, { dx: 170, variant: '#a855f7', d: 0.12 }], ['candles', 'camera', 170, { dx: -620, d: 0.06 }]]],
-    [1.62, [['champagne', 'land', 200, { lx: 1660 }], ['flowers', 'camera', 220, { dx: -460, d: 0.05, rx: -0.75 }], ['rings', 'float', 230, { dx: 40, d: 0.1 }]]],
-    [2.46, [['booties', 'land', 210, { lx: 1130, lz: -200 }], ['bottle', 'float', 180, { dx: -110, d: 0.08 }], ['rattle', 'camera', 190, { dx: 560, d: 0.04 }]]],
+    [1.72, [['champagne', 'land', 200, { lx: 1660 }], ['flowers', 'camera', 220, { dx: -460, d: 0.05, rx: -0.75 }], ['rings', 'float', 230, { dx: 40, d: 0.1 }]]],
+    [2.68, [['booties', 'land', 210, { lx: 1130, lz: -200 }], ['bottle', 'float', 180, { dx: -110, d: 0.08 }], ['rattle', 'camera', 190, { dx: 560, d: 0.04 }]]],
   ]
   const front = []
   WAVES.forEach(([w0, list]) => list.forEach(([kind, path, size, o], i) => {
@@ -332,7 +332,7 @@ function sDrop(t) {
   g.restore()
 
   // The words, on the voice.
-  const L = [['Birthdays.', 0.6, 1.52], ['Weddings.', 1.6, 2.36], ['Baby showers.', 2.46, 3.6]]
+  const L = [['Birthdays.', 0.6, 1.62], ['Weddings.', 1.7, 2.56], ['Baby showers.', 2.66, 3.62]]
   L.forEach(([w, t0, out], i) => kinetic(w, 130, 560, t - t0, { size: i === 2 ? 168 : 196, out: out - t0, color: INK }))
   // A small eyebrow that stays
   text('FOR EVERY CELEBRATION', 138, 360, { size: 30, color: MUTED, alpha: clamp((t - 0.5) * 3) * (1 - exitT) })
@@ -387,7 +387,7 @@ function swapContext(cx, fn) { const keep = g; g = cx; try { fn() } finally { g 
 
 function sChaos(t) {
   const blurOut = prog(t, 2.05, 2.45)
-  const pull = Math.pow(prog(t, 3.6, 4.0), 2.2)
+  const pull = Math.pow(prog(t, 3.55, 4.0), 2.2)
   const cx = 960, cy = 540
   BUBBLES.forEach(([name, msg, x, y, col], i) => {
     const t0 = i * 0.25, s = spring(t - t0, 260, 17)
@@ -402,10 +402,10 @@ function sChaos(t) {
   })
   // The question, word by word on the voice.
   g.save(); const zp = 1 - pull; g.translate(cx, cy); g.scale(zp, zp); g.translate(-cx, -cy); g.globalAlpha = 1 - pull
-  words([['So', 2.2], ['what', 2.34], ['do', 2.6], ['you', 2.74]], 960, 500, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
-  words([['actually', 2.92, { fam: SCRIPT, size: 210, color: ACCENT, weight: '400' }], ['want?', 3.42]], 960, 690, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
+  words([['So', 2.22], ['what', 2.38], ['do', 2.55], ['you', 2.68]], 960, 500, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
+  words([['actually', 2.9, { fam: SCRIPT, size: 210, color: ACCENT, weight: '400' }], ['want?', 3.32]], 960, 690, t, { size: 150, fam: DISPLAY, weight: '500' }, 'center')
   g.restore()
-  if (pull > 0.6) gift({ x: cx, y: cy + 60, size: 120 * prog(t, 3.75, 4.0), ry: t * 3, color: ACCENT })
+  if (pull > 0.6) gift({ x: cx, y: cy + 60, size: 120 * prog(t, 3.7, 4.0), ry: t * 3, color: ACCENT })
   flush3D()
 }
 
@@ -896,18 +896,18 @@ function sEnd(t) {
   flush3D()
   // Logo on "GiftMe", then the tagline word by word.
   logo(960, 380, 0.82, t - 0.28)
-  words([['Wishlists', 1.49], ['your', 2.15], ['friends', 2.45], ['can', 2.73]], 960, 540, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
-  words([['actually', 2.9, { fam: SCRIPT, size: 116, color: ACCENT, weight: '400' }], ['give', 3.33], ['to.', 3.61]], 960, 650, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
-  const cp = spring(t - 3.8, 220, 18)
+  words([['Wishlists', 1.15], ['your', 1.55], ['friends', 1.72], ['can', 1.98]], 960, 540, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
+  words([['actually', 2.2, { fam: SCRIPT, size: 116, color: ACCENT, weight: '400' }], ['give', 2.72], ['to.', 2.95]], 960, 650, t, { size: 82, fam: DISPLAY, weight: '500' }, 'center')
+  const cp = spring(t - 3.5, 220, 18)
   if (cp > 0) {
-    const pr = press(t, 4.6)
+    const pr = press(t, 4.3)
     g.save(); g.translate(960, 780); g.scale((0.6 + 0.4 * cp) * (1 - pr * 0.05), (0.6 + 0.4 * cp) * (1 - pr * 0.05)); g.globalAlpha = clamp(cp * 3)
     card(-300, -48, 600, 96, 48, ACCENT, [40, 16, 0.3]); text('Start your wishlist, it’s free', 0, 12, { size: 34, color: '#fff', align: 'center' })
     g.restore()
-    text('giftme.website', 960, 875, { size: 30, color: MUTED, align: 'center', alpha: clamp((t - 4.0) * 4) })
+    text('giftme.website', 960, 875, { size: 30, color: MUTED, align: 'center', alpha: clamp((t - 3.7) * 4) })
   }
-  const cur = at(t, [{ t: 3.7, x: 1500, y: 980 }, { t: 4.5, x: 1080, y: 790, d: 0.6 }])
-  if (t > 3.7) cursor(cur.x, cur.y, 'You', ACCENT, press(t, 4.6), clamp((t - 3.7) * 4))
+  const cur = at(t, [{ t: 3.4, x: 1500, y: 980 }, { t: 4.2, x: 1080, y: 790, d: 0.6 }])
+  if (t > 3.4) cursor(cur.x, cur.y, 'You', ACCENT, press(t, 4.3), clamp((t - 3.4) * 4))
 }
 
 // ---------------------------------------------------------------- the clock
