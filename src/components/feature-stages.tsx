@@ -12,12 +12,12 @@ export type SceneName = 'add' | 'search' | 'share' | 'give' | 'thanks' | 'friend
 type SceneSpec = { ms: number; h: string; path: string; label: string; Scene: (p: { t: number }) => React.ReactNode }
 
 const SCENES: Record<SceneName, SceneSpec> = {
-  add: { ms: 7600, h: 'h-[400px] sm:h-[380px]', path: 'giftme.ng/dashboard/w/wedding', label: 'A shop link turns into a gift on the list', Scene: AddGiftScene },
-  search: { ms: 9800, h: 'h-[440px]', path: 'giftme.ng/dashboard/w/wedding', label: 'Searching shops and adding a result', Scene: SearchScene },
-  share: { ms: 5600, h: 'h-[460px] sm:h-[380px]', path: 'giftme.ng/dashboard/w/wedding', label: 'Sharing the wishlist link in a chat', Scene: ShareScene },
-  give: { ms: 6200, h: 'h-[560px] sm:h-[400px]', path: 'giftme.ng/w/amaka/wedding', label: 'A friend chips in toward a gift', Scene: GiveScene },
-  friends: { ms: 7200, h: 'h-[470px] sm:h-[420px]', path: 'giftme.ng/dashboard/friends', label: 'Finding friends from your contacts and following one', Scene: FriendsScene },
-  thanks: { ms: 5800, h: 'h-[440px] sm:h-[400px]', path: 'giftme.ng/dashboard/w/wedding', label: 'The gift lands and a thank-you goes out', Scene: ThanksScene },
+  add: { ms: 7600, h: 'h-[400px] sm:h-[380px]', path: 'giftme.website/dashboard/w/wedding', label: 'A shop link turns into a gift on the list', Scene: AddGiftScene },
+  search: { ms: 9800, h: 'h-[440px]', path: 'giftme.website/dashboard/w/wedding', label: 'Searching shops and adding a result', Scene: SearchScene },
+  share: { ms: 5600, h: 'h-[460px] sm:h-[380px]', path: 'giftme.website/dashboard/w/wedding', label: 'Sharing the wishlist link in a chat', Scene: ShareScene },
+  give: { ms: 6200, h: 'h-[560px] sm:h-[400px]', path: 'giftme.website/w/amaka/wedding', label: 'A friend chips in toward a gift', Scene: GiveScene },
+  friends: { ms: 7200, h: 'h-[470px] sm:h-[420px]', path: 'giftme.website/dashboard/friends', label: 'Finding friends from your contacts and following one', Scene: FriendsScene },
+  thanks: { ms: 5800, h: 'h-[440px] sm:h-[400px]', path: 'giftme.website/dashboard/w/wedding', label: 'The gift lands and a thank-you goes out', Scene: ThanksScene },
 }
 
 function useStageClock(ms: number) {
@@ -211,7 +211,7 @@ function ShareScene({ t }: { t: number }) {
       <div className="flex flex-col gap-3 self-start rounded-2xl border border-white/70 bg-white/80 p-4 dark:border-white/10 dark:bg-neutral-900/70">
         <p className="font-display text-2xl">Share your wishlist</p>
         <div className="truncate rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[12px] text-neutral-600 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300">
-          giftme.ng/w/amaka/wedding
+          giftme.website/w/amaka/wedding
         </div>
         <div className="flex gap-2">
           <span className={`flex-1 rounded-full py-2 text-center text-xs transition-colors ${copied ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-purple-500/15 text-purple-800 dark:text-purple-200'}`}>
@@ -232,7 +232,7 @@ function ShareScene({ t }: { t: number }) {
                 <p className="text-[11px] text-neutral-600 dark:text-neutral-300">Chip in toward a gift, or reserve one to buy yourself.</p>
               </div>
             </div>
-            <p className="px-1 pt-1.5">Our wishlist is up! 🥹 giftme.ng/w/amaka/wedding</p>
+            <p className="px-1 pt-1.5">Our wishlist is up! 🥹 giftme.website/w/amaka/wedding</p>
           </div>
         )}
         {reply && (

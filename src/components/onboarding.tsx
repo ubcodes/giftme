@@ -10,11 +10,13 @@ export function GettingStarted({
   firstWishlistId,
   hasGift,
   hasBank,
+  findable,
 }: {
   hasPhoto: boolean
   firstWishlistId: string | null
   hasGift: boolean
   hasBank: boolean
+  findable: boolean
 }) {
   const linkClass = `inline-flex min-h-9 shrink-0 items-center px-4 text-sm ${primaryButton}`
   const steps: Step[] = [
@@ -45,6 +47,16 @@ export function GettingStarted({
       action: (
         <Link to="/dashboard/settings" hash="payouts" className={linkClass}>
           Add bank
+        </Link>
+      ),
+    },
+    {
+      done: findable,
+      title: 'Let friends find you (optional)',
+      body: 'Add your number and socials, and see which friends are already here.',
+      action: (
+        <Link to="/dashboard/friends" className={linkClass}>
+          Find friends
         </Link>
       ),
     },

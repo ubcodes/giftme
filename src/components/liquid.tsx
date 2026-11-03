@@ -33,9 +33,9 @@ export function LiquidGlass() {
 }
 
 /**
- * The mouse pointer on the landing page: an arrow with a "You" name tag, like the friends'
- * cursors in the hero demo. Over links and buttons it shows the `data-cursor` label when one
- * is set and gives a small press. Mouse users only; touch keeps the default.
+ * The mouse pointer on the landing page: a purple arrow like the friends' cursors in the
+ * demos. Over links and buttons it shows the `data-cursor` label when one is set and gives a
+ * small press. Mouse users only; touch keeps the default.
  */
 export function FollowCursor() {
   const pointer = useRef<HTMLDivElement>(null)
@@ -86,9 +86,11 @@ export function FollowCursor() {
       <svg width="20" height="20" viewBox="0 0 24 24" className={`drop-shadow-md transition-transform duration-150 ${over ? 'scale-90' : ''}`} style={{ transformOrigin: '4px 3px' }}>
         <path d="M4 3l7 17 2.5-7.5L21 10z" fill="#a855f7" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
       </svg>
-      <span className="absolute top-3 left-3 rounded-full rounded-tl-sm bg-purple-500 px-2 py-0.5 text-[11px] whitespace-nowrap text-white shadow">
-        {label ?? 'You'}
-      </span>
+      {label && (
+        <span className="absolute top-3 left-3 rounded-full rounded-tl-sm bg-purple-500 px-2 py-0.5 text-[11px] whitespace-nowrap text-white shadow">
+          {label}
+        </span>
+      )}
     </div>
   )
 }

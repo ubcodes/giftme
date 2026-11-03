@@ -127,9 +127,18 @@ export function PersonCard({ person, onFollowChange }: { person: Person; onFollo
 }
 
 /** Settings: the phone number and handles friends can find you by, and the switch that allows it. */
-export function FindabilityForm({ me, onSaved }: { me: Profile; onSaved: () => void }) {
+export function FindabilityForm({ me, onSaved, submitLabel = 'Save', switchOnWhenFilled = false }: { me: Profile; onSaved: () => void; submitLabel?: string; switchOnWhenFilled?: boolean }) {
   const [phone, setPhone] = useState(me.phone ?? '')
-  const [discoverable, setDiscoverable] = useState(me.discoverable)
+  const [discoverable, setDiscoverableRaw] = useState(me.discoverable)
+  // During setup, giving a number or handle here means "find me", unless they've flipped the switch themselves.
+  const [touched, setTouched] = useState(false)
+  const setDiscoverable = (on: boolean) => {
+    setTouched(true)
+    setDiscoverableRaw(on)
+  }
+  const filled = () => {
+    if (switchOnWhenFilled && !touched) setDiscoverableRaw(true)
+  }
   const [socials, setSocials] = useState<Record<SocialKey, string>>({
     instagram: me.socials.instagram ?? '',
     tiktok: me.socials.tiktok ?? '',
@@ -156,7 +165,7 @@ export function FindabilityForm({ me, onSaved }: { me: Profile; onSaved: () => v
     <form onSubmit={save} className="flex flex-col gap-5">
       <DiscoverableSwitch on={discoverable} onChange={setDiscoverable} />
       <Field label="Phone number" hint="friends who have it saved can find you">
-        <input className={inputClass} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0803 123 4567" />
+        <input className={inputClass} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => (setPhone(e.target.value), filled())} placeholder="0803 123 4567" />
       </Field>
       <div className="flex flex-col gap-3">
         <p className="text-sm">
@@ -175,7 +184,10 @@ export function FindabilityForm({ me, onSaved }: { me: Profile; onSaved: () => v
               <input
                 className="w-full min-w-0 bg-transparent py-2.5 text-[15px] outline-none placeholder:text-neutral-400"
                 value={socials[s.key]}
-                onChange={(e) => setSocials((v) => ({ ...v, [s.key]: e.target.value }))}
+                onChange={(e) => {
+                  setSocials((v) => ({ ...v, [s.key]: e.target.value }))
+                  filled()
+                }}
                 placeholder={s.key === 'substack' ? 'yourname.substack.com' : `@your ${s.label} handle`}
                 autoCapitalize="off"
                 spellCheck={false}
@@ -186,7 +198,7 @@ export function FindabilityForm({ me, onSaved }: { me: Profile; onSaved: () => v
       </div>
       <ErrorText>{error}</ErrorText>
       <button type="submit" disabled={busy} className={`min-h-12 text-[15px] ${primaryButton}`}>
-        {busy ? 'Saving…' : saved ? 'Saved' : 'Save'}
+        {busy ? 'Saving…' : saved ? 'Saved' : submitLabel}
       </button>
     </form>
   )

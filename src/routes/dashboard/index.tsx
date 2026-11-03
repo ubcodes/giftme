@@ -40,6 +40,7 @@ function Dashboard() {
         firstWishlistId={(wishlists.find((w) => w.items === 0) ?? wishlists[0])?.id ?? null}
         hasGift={wishlists.some((w) => w.items > 0)}
         hasBank={!!user.bank}
+        findable={user.discoverable}
       />
 
       {wishlists.length === 0 ? (

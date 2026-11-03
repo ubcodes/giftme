@@ -101,14 +101,19 @@ function TurnOnFinding({ save, onDone, hasPhone }: { save: (on: boolean) => Prom
 }
 
 function FromContacts() {
-  const [supported, setSupported] = useState(false)
+  // Android Chrome can open the contact list directly; iPhone browsers can't, so iPhone gets export steps.
+  const [platform, setPlatform] = useState<'picker' | 'iphone' | 'other'>('other')
+  const supported = platform === 'picker'
   const [people, setPeople] = useState<Person[] | null>(null)
   const [checked, setChecked] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const file = useRef<HTMLInputElement>(null)
 
-  useEffect(() => setSupported(!!contactsApi() && 'ContactsManager' in window), [])
+  useEffect(() => {
+    const iphone = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    setPlatform(contactsApi() && 'ContactsManager' in window ? 'picker' : iphone ? 'iphone' : 'other')
+  }, [])
 
   async function match(contacts: RawContact[]) {
     if (contacts.length === 0) return setError('No phone numbers or emails in those contacts.')
@@ -145,9 +150,27 @@ function FromContacts() {
         <h2 className="font-display text-3xl">From your phone</h2>
         <p className="mt-1 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
           {supported
-            ? 'Pick the contacts to check. Their numbers are scrambled on your phone before we look, and we don’t keep them.'
-            : 'Export your contacts as a .vcf file (on iPhone: Contacts, then share a list; or from Google Contacts) and choose it here. Numbers are scrambled on your device first, and we don’t keep them.'}
+            ? 'Pick the contacts to check. Numbers are scrambled on your phone before we look, and we don’t keep them.'
+            : 'See which of your contacts are already here. Numbers are scrambled on your device before we look, and we don’t keep them.'}
         </p>
+        {platform === 'iphone' && (
+          <details className="mt-3 rounded-xl border border-neutral-200/70 px-3.5 py-2.5 text-sm dark:border-neutral-800">
+            <summary className="cursor-pointer text-neutral-700 dark:text-neutral-300">iPhone can’t share contacts with websites directly. Here’s the quick way</summary>
+            <ol className="mt-2 list-decimal pl-5 leading-relaxed text-neutral-600 dark:text-neutral-400">
+              <li>Open the Contacts app and tap Lists at the top left.</li>
+              <li>Press and hold All Contacts, then tap Export and Save to Files.</li>
+              <li>Come back here, tap Choose contacts file and pick it.</li>
+            </ol>
+          </details>
+        )}
+        {platform === 'other' && (
+          <details className="mt-3 rounded-xl border border-neutral-200/70 px-3.5 py-2.5 text-sm dark:border-neutral-800">
+            <summary className="cursor-pointer text-neutral-700 dark:text-neutral-300">How to get your contacts file</summary>
+            <p className="mt-2 leading-relaxed text-neutral-600 dark:text-neutral-400">
+              In Google Contacts, choose Export, then vCard. On an iPhone or Mac, export All Contacts from the Contacts app. Then choose that file here.
+            </p>
+          </details>
+        )}
       </div>
       <div className="flex flex-wrap gap-2.5">
         {supported && (
@@ -156,7 +179,7 @@ function FromContacts() {
           </button>
         )}
         <button type="button" onClick={() => file.current?.click()} disabled={busy} className={`min-h-11 px-5 text-[15px] ${supported ? secondaryButton : primaryButton}`}>
-          {busy && !supported ? 'Checking…' : 'Upload a contacts file'}
+          {busy && !supported ? 'Checking…' : platform === 'iphone' ? 'Choose contacts file' : 'Upload a contacts file'}
         </button>
         <input
           ref={file}
