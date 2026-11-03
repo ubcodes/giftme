@@ -509,18 +509,18 @@ function Ticker() {
 type FeatureSpec = {
   id: string
   scene: SceneName
-  icon: string
+  /** What this step of the journey is, in a couple of words. */
+  kicker: string
   title: string
   accent: string
   body: React.ReactNode
-  points: { title: string; body: string }[]
 }
 
 const FEATURES: FeatureSpec[] = [
   {
     id: 'how',
     scene: 'add',
-    icon: '🔗',
+    kicker: 'Add gifts',
     title: 'Paste a link.',
     accent: 'That’s the whole form.',
     body: (
@@ -529,25 +529,11 @@ const FEATURES: FeatureSpec[] = [
         gifts into the order you like and star the ones you want most.
       </>
     ),
-    points: [
-      {
-        title: 'Any shop',
-        body: 'Big stores, small Instagram shops, or type it in by hand.',
-      },
-      {
-        title: 'Cash funds',
-        body: 'Honeymoon, school fees, a new laptop. Friends give toward a goal.',
-      },
-      {
-        title: 'Most wanted',
-        body: 'A star tells everyone which gifts matter most to you.',
-      },
-    ],
   },
   {
     id: 'search',
     scene: 'search',
-    icon: '🔍',
+    kicker: 'Search every shop',
     title: 'Don’t have a link?',
     accent: 'Just say what you’d love.',
     body: (
@@ -556,25 +542,11 @@ const FEATURES: FeatureSpec[] = [
         prices. Tap one and it’s on your list.
       </>
     ),
-    points: [
-      {
-        title: 'Shops in Nigeria',
-        body: 'Jumia, Konga, Jiji and more, with their own prices.',
-      },
-      {
-        title: 'And abroad',
-        body: 'Amazon, Temu and others, converted to naira for you.',
-      },
-      {
-        title: 'One tap to add',
-        body: 'The photo, price and shop link all come with it.',
-      },
-    ],
   },
   {
     id: 'share',
     scene: 'share',
-    icon: '💬',
+    kicker: 'Share',
     title: 'Share',
     accent: 'one link.',
     body: (
@@ -583,25 +555,11 @@ const FEATURES: FeatureSpec[] = [
         need an account.
       </>
     ),
-    points: [
-      {
-        title: 'Looks right in chats',
-        body: 'WhatsApp, Instagram and X show your cover and title.',
-      },
-      {
-        title: 'Countdown',
-        body: 'Everyone sees how many days are left to the big day.',
-      },
-      {
-        title: 'No sign-up for guests',
-        body: 'They open the link and give. That’s all.',
-      },
-    ],
   },
   {
     id: 'give',
     scene: 'give',
-    icon: '🎁',
+    kicker: 'Give',
     title: 'Friends chip in,',
     accent: 'or reserve it.',
     body: (
@@ -609,25 +567,11 @@ const FEATURES: FeatureSpec[] = [
         Guests give <b>any amount</b> by card, transfer or USSD, or reserve a gift to buy themselves so nobody buys the same blender twice.
       </>
     ),
-    points: [
-      {
-        title: 'Card, transfer, USSD',
-        body: 'Paid securely through Paystack.',
-      },
-      {
-        title: 'No doubles',
-        body: 'Reserved gifts show as taken for everyone else.',
-      },
-      {
-        title: 'Private by default',
-        body: 'Guests only see progress, never who gave what.',
-      },
-    ],
   },
   {
     id: 'thanks',
     scene: 'thanks',
-    icon: '💸',
+    kicker: 'Get paid, say thanks',
     title: 'Money lands.',
     accent: 'Say thanks.',
     body: (
@@ -635,25 +579,11 @@ const FEATURES: FeatureSpec[] = [
         Every gift settles <b>straight to your bank</b>. You see each name, amount and sweet note, and send a thank-you in one tap.
       </>
     ),
-    points: [
-      {
-        title: 'Straight to your bank',
-        body: 'GiftMe never holds your money.',
-      },
-      {
-        title: 'Every note, in one place',
-        body: 'Who gave, what for, and what they said.',
-      },
-      {
-        title: 'Thank-you emails',
-        body: 'Write a few words and we deliver them.',
-      },
-    ],
   },
   {
     id: 'friends',
     scene: 'friends',
-    icon: '👋',
+    kicker: 'Friends',
     title: 'Find your',
     accent: 'people.',
     body: (
@@ -662,11 +592,6 @@ const FEATURES: FeatureSpec[] = [
         their Instagram, TikTok, X or Substack handle too.
       </>
     ),
-    points: [
-      { title: 'From your phone', body: 'Numbers are scrambled on your phone before we check, and never kept.' },
-      { title: 'Your socials, linked', body: 'Add your handles so friends can find you and see your wishlists.' },
-      { title: 'Only if you want', body: 'You choose whether friends can find you. Amounts always stay private.' },
-    ],
   },
 ]
 
@@ -700,8 +625,9 @@ function ScrollWords({ text, className = '', offset = 0 }: { text: string; class
 }
 
 /**
- * One chapter: a big outlined number, a headline that rises word by word, and the demo screen
- * tilting up from flat in 3D as it scrolls into view. The "give" chapter is dark, for contrast.
+ * One step of the GiftMe journey (the big number is its place in that order): a headline that
+ * rises word by word and the demo screen tilting up from flat in 3D as it scrolls into view.
+ * The "give" step is dark, for contrast.
  */
 function FeatureSection({ feature: f, index }: { feature: FeatureSpec; index: number }) {
   const ref = useRef<HTMLElement>(null)
@@ -732,12 +658,7 @@ function FeatureSection({ feature: f, index }: { feature: FeatureSpec; index: nu
           {String(index + 1).padStart(2, '0')}
         </span>
         <div className="flex max-w-3xl flex-col gap-5">
-          <p className="flex items-center gap-2 text-xs tracking-[0.18em] text-neutral-500 uppercase dark:text-neutral-400">
-            <span aria-hidden="true" className="text-base">
-              {f.icon}
-            </span>
-            Chapter {index + 1} of {FEATURES.length}
-          </p>
+          <p className="text-xs tracking-[0.18em] text-neutral-500 uppercase dark:text-neutral-400">{f.kicker}</p>
           <h2 className="font-display text-[clamp(40px,5.6vw,84px)] leading-[0.95] tracking-[-0.01em]">
             <ScrollWords text={f.title} />{' '}
             <ScrollWords text={f.accent} offset={titleWords} className="font-editorial text-[1.18em] text-purple-600 dark:text-purple-300" />
@@ -761,15 +682,6 @@ function FeatureSection({ feature: f, index }: { feature: FeatureSpec; index: nu
           <Stage scene={f.scene} />
         </div>
       </div>
-      <ul className="grid grid-cols-1 gap-6 border-t border-neutral-200/80 pt-8 sm:grid-cols-3 dark:border-white/10">
-        {f.points.map((p, k) => (
-          <li key={p.title} className="flex flex-col gap-1.5">
-            <span className="text-xs text-purple-600 tabular-nums dark:text-purple-300">0{k + 1}</span>
-            <span className="font-display text-2xl leading-tight">{p.title}</span>
-            <span className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{p.body}</span>
-          </li>
-        ))}
-      </ul>
     </section>
   )
 }

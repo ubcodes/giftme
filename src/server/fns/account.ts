@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { authMode, clerkPublishableKey, endDevSession, startDevSession } from '../auth'
 import { run } from '../db'
+import { isAdmin } from '../admin'
 import { attempt } from '../errors'
 import { siteUrl } from '../gifts'
 import { handleAvailable, normalizeHandle, requireUser, saveProfile, suggestHandle, toProfile, viewerRow } from '../users'
@@ -13,6 +14,7 @@ export const getViewerFn = createServerFn({ method: 'GET' }).handler(async () =>
     mode,
     publishableKey: mode === 'clerk' ? clerkPublishableKey() : null,
     user: row ? toProfile(row) : null,
+    isAdmin: isAdmin(row),
     siteUrl: siteUrl(),
   }
 })

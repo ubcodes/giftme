@@ -16,7 +16,8 @@ import {
 } from '../gifts'
 import { previewLink, usdRate } from '../products'
 import { resolveShopLink, searchProvider } from '../search'
-import { requireOwner, toProfile } from '../users'
+import { adminStats } from '../admin'
+import { requireOwner, requireUser, toProfile } from '../users'
 import {
   addItem,
   createWishlist,
@@ -203,3 +204,5 @@ export const savePayoutAccountFn = createServerFn({ method: 'POST' })
       return { user: await savePayoutAccount(owner.id, data) }
     }),
   )
+
+export const getAdminStatsFn = createServerFn({ method: 'GET' }).handler(async () => adminStats(await requireUser()))

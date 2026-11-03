@@ -5,6 +5,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities'
 import { z } from 'zod'
 import { AddFundDialog, AddGiftDialog, EditItemDialog } from '@/components/item-editor'
+import { GuidedTour, useTour, type TourStep } from '@/components/guided-tour'
 import { BankNeededNotice } from '@/components/onboarding'
 import { ShareButtons } from '@/components/share'
 import { Bar, Dialog, ErrorText, Field, ItemArt, Photo, StarIcon, glassCard } from '@/components/ui'
@@ -24,6 +25,17 @@ import { countdownText, formatDate } from '@/lib/dates'
 import { naira } from '@/lib/format'
 import { occasion } from '@/lib/occasions'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/ui'
+
+// The first time someone opens a wishlist, a GiftMe cursor walks them through the page.
+const WISHLIST_TOUR: TourStep[] = [
+  { target: 'title', title: 'This is your wishlist', body: 'Change the name, occasion or date any time with the pencil. Guests see a countdown to the day.' },
+  { target: 'add', title: 'Add what you’d love', body: 'Paste a link from any shop, or type what you want and pick from shops that sell it. A cash fund works for bigger dreams.' },
+  { target: 'gifts', title: 'Put them in order', body: 'Drag gifts to reorder them, and star the ones you want most. Guests see the same order.' },
+  { target: 'bank', title: 'Add your bank account', body: 'Friends can only send money once you do. Every gift goes straight to your bank; GiftMe never holds it.' },
+  { target: 'share', title: 'Share one link', body: 'Copy it or send it on WhatsApp. Friends don’t need an account to give.' },
+  { target: 'guest', title: 'See what friends see', body: 'Open your list as a guest to check how it looks before you share it.' },
+  { target: 'who-gave', title: 'Who gave, and thank you', body: 'Every gift, note and name lands here. Only you can see them, and you can send a thank-you in one tap.' },
+]
 
 export const Route = createFileRoute('/dashboard/w/$id')({
   validateSearch: z.object({ add: z.boolean().optional() }),
@@ -52,6 +64,7 @@ function Editor() {
   const navigate = Route.useNavigate()
   // Coming straight from "Create wishlist" opens the add-a-gift dialog.
   const [dialog, setDialog] = useState<DialogState>(add ? { kind: 'add-gift' } : null)
+  const tour = useTour('gm_tour_wishlist')
   const { wishlist, items, contributions, reservations, user } = data
 
   const shareUrl = `${data.siteUrl}/w/${user.handle}/${wishlist.slug}`
@@ -93,6 +106,7 @@ function Editor() {
 
   return (
     <div className="flex flex-col gap-10">
+      {tour.open && !dialog && <GuidedTour steps={WISHLIST_TOUR} onDone={tour.finish} />}
       <div className="flex flex-col gap-2">
         <Link to="/dashboard" className="text-sm text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200">
           ← All wishlists
@@ -112,7 +126,7 @@ function Editor() {
             {countdown && ` · ${countdown}`}
             <PencilIcon size={12} />
           </button>
-          <div className="group flex items-start gap-3">
+          <div className="group flex items-start gap-3" data-tour="title">
             <h1 className="font-display text-5xl leading-none sm:text-6xl">{wishlist.title}</h1>
             <button
               type="button"
@@ -131,22 +145,35 @@ function Editor() {
             <button type="button" onClick={() => setDialog({ kind: 'edit-list' })} className={`inline-flex min-h-10 items-center gap-2 px-4 text-sm ${secondaryButton}`}>
               <PencilIcon size={14} /> Edit occasion, date & title
             </button>
-            <a href={`/w/${user.handle}/${wishlist.slug}`} target="_blank" rel="noreferrer" className={`inline-flex min-h-10 items-center px-4 text-sm ${secondaryButton}`}>
+            <a
+              href={`/w/${user.handle}/${wishlist.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              data-tour="guest"
+              className={`inline-flex min-h-10 items-center px-4 text-sm ${secondaryButton}`}
+            >
               View as a guest ↗
             </a>
+            <button type="button" onClick={tour.start} className="inline-flex min-h-10 cursor-pointer items-center px-3 text-sm text-neutral-500 hover:text-purple-700 dark:text-neutral-400 dark:hover:text-purple-300">
+              Take the tour
+            </button>
           </div>
         </div>
-        <div className={`flex flex-col gap-3 rounded-2xl p-5 ${glassCard}`}>
+        <div data-tour="share" className={`flex flex-col gap-3 rounded-2xl p-5 ${glassCard}`}>
           <p className="font-display text-2xl">Share your wishlist</p>
           <ShareButtons url={shareUrl} title={wishlist.title} />
         </div>
-        {!user.bank && <BankNeededNotice />}
+        {!user.bank && (
+          <div data-tour="bank" className="lg:col-span-2">
+            <BankNeededNotice />
+          </div>
+        )}
       </header>
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-3xl">Gifts & funds</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2" data-tour="add">
             <button type="button" onClick={() => setDialog({ kind: 'add-gift' })} className={`min-h-10 px-4 text-sm ${primaryButton}`}>
               Add a gift
             </button>
@@ -171,7 +198,7 @@ function Editor() {
             </p>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
               <SortableContext items={order} strategy={verticalListSortingStrategy}>
-                <ul className="flex flex-col gap-2.5">
+                <ul className="flex flex-col gap-2.5" data-tour="gifts">
                   {ordered.map((item) => (
                     <OwnerItemRow
                       key={item.id}
@@ -188,7 +215,7 @@ function Editor() {
         )}
       </section>
 
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-4" data-tour="who-gave">
         <h2 className="font-display text-3xl">Who gave</h2>
         <p className="-mt-2 text-sm text-neutral-500 dark:text-neutral-400">Only you can see names, amounts and notes.</p>
         <div className={`overflow-x-auto rounded-2xl ${glassCard}`}>
