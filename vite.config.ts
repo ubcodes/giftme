@@ -12,7 +12,7 @@ export default defineConfig({
     tanstackStart(),
     nitroV2Plugin({
       compatibilityDate: '2025-10-08',
-      preset: process.env.NITRO_PRESET ?? 'node',
+      preset: process.env.NITRO_PRESET ?? 'node-server',
     }),
     viteReact(),
   ],
