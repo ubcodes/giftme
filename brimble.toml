@@ -9,7 +9,7 @@ type = "web"
 region = "eu-central"
 
 [services.giftme.build]
-install = "npm ci"
+install = "npm ci --include=dev"
 command = "npm run build"
 runtime = { node = "22" }
 
