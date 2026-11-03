@@ -32,7 +32,7 @@ function Landing() {
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <TryIt />
         <section id="film" className="scroll-mt-20 flex flex-col gap-8 pt-20 sm:pt-24">
-          <SectionTitle kicker="See it in action" title="GiftMe in" accent="40 seconds" />
+          <SectionTitle kicker="See it in action" title="GiftMe in" accent="45 seconds" />
           <Film />
         </section>
         <FeatureSections />
