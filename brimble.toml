@@ -1,0 +1,42 @@
+#:schema https://brimble.io/schema/brimble.json
+
+# GiftMe on Brimble, next to its Blnk Core (blnk/brimble/README.md).
+# The database file and uploaded photos live on the volume at /data, so they survive deploys.
+
+[services.giftme]
+type = "web"
+region = "eu-central"
+
+[services.giftme.build]
+install = "npm ci"
+command = "npm run build"
+runtime = { node = "22" }
+
+[services.giftme.deploy]
+start = "npm start"
+port = 3000
+health = "/"
+
+[services.giftme.resources]
+cpu = 0.5
+memory = "1gb"
+
+[services.giftme.volume]
+path = "/data"
+size = "2gb"
+
+[services.giftme.env]
+NODE_ENV = "production"
+PUBLIC_SITE_URL = "https://giftme.website"
+DATABASE_URL = "file:/data/giftme.db"
+UPLOAD_DIR = "/data/uploads"
+BLNK_URL = "https://giftme-blnk-blnk-test.brimble.app"
+USD_NGN_RATE = "1500"
+PLATFORM_FEE_PERCENT = "0"
+
+# Set these in the Brimble dashboard (Environment variables), never in this file.
+[services.giftme.secrets]
+required = ["BLNK_SECRET_KEY", "PAYSTACK_SECRET_KEY", "CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY", "ADMIN_EMAILS"]
+
+[services.giftme.network]
+domains = ["giftme.website", "www.giftme.website"]
