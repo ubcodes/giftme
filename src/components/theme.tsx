@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'theme'
 
-/** Runs before paint so the page never flashes the wrong theme. */
-export const themeInitScript = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}})()`
+/** Runs before paint so the page never flashes the wrong theme. Dark unless the visitor chose light. */
+export const themeInitScript = `(function(){try{document.documentElement.classList.toggle('dark',localStorage.getItem('${STORAGE_KEY}')!=='light')}catch(e){}})()`
 
 /** Whether the page is in dark mode right now, following the toggle as it changes. */
 export function useIsDark() {
