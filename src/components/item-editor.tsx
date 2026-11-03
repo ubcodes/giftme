@@ -407,7 +407,7 @@ function ItemForm({
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-6 sm:grid-cols-[200px_1fr]">
+    <form onSubmit={submit} className="grid grid-cols-1 gap-6 sm:grid-cols-[200px_minmax(0,1fr)]">
       <div className="flex flex-col gap-2.5">
         <div className="grid aspect-square w-full place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-200/70 text-neutral-400 dark:from-neutral-800/60 dark:to-neutral-900 dark:text-neutral-600">
           {image ? <img src={image} alt="" className="size-full object-cover" /> : <GiftIcon size={32} />}

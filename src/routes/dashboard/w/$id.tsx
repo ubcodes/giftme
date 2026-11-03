@@ -113,7 +113,7 @@ function Editor() {
         </Link>
       </div>
 
-      <header className="grid gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
+      <header className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
         <div className="flex flex-col gap-3">
           <button
             type="button"
@@ -127,7 +127,7 @@ function Editor() {
             <PencilIcon size={12} />
           </button>
           <div className="group flex items-start gap-3" data-tour="title">
-            <h1 className="font-display text-5xl leading-none sm:text-6xl">{wishlist.title}</h1>
+            <h1 className="font-display min-w-0 text-5xl leading-none break-words sm:text-6xl">{wishlist.title}</h1>
             <button
               type="button"
               onClick={() => setDialog({ kind: 'edit-list' })}
@@ -159,7 +159,7 @@ function Editor() {
             </button>
           </div>
         </div>
-        <div data-tour="share" className={`flex flex-col gap-3 rounded-2xl p-5 ${glassCard}`}>
+        <div data-tour="share" className={`flex min-w-0 flex-col gap-3 rounded-2xl p-5 ${glassCard}`}>
           <p className="font-display text-2xl">Share your wishlist</p>
           <ShareButtons url={shareUrl} title={wishlist.title} />
         </div>
