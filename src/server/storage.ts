@@ -1,11 +1,14 @@
 import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import sharp from 'sharp'
+import { one, run } from './db'
 import { safeFetch } from './net'
 
 // Pluggable image storage. Items first save the remote image URL, then a copy is made here
-// so a list never breaks when a shop changes its pictures. Swap LocalStore for an S3/R2
-// store by implementing ImageStore and choosing it in getStore().
+// so a list never breaks when a shop changes its pictures. LocalStore writes files to
+// UPLOAD_DIR; DbStore (IMAGE_STORE=database) keeps the bytes in the app database, for hosts
+// without a persistent disk. Both are served from /media/<key>.
 
 export interface ImageStore {
   /** Saves the bytes and returns a URL the browser can load. */
@@ -33,10 +36,31 @@ class LocalStore implements ImageStore {
   }
 }
 
+// Big photos are scaled down before going into the database: phones send 4–6 MB pictures,
+// and nothing on the site shows them wider than this.
+const DB_MAX_BYTES = 1_000_000
+const DB_MAX_SIDE = 2000
+
+class DbStore implements ImageStore {
+  async put(key: string, bytes: Buffer, contentType: string) {
+    let body = bytes
+    if (bytes.byteLength > DB_MAX_BYTES && contentType !== 'image/gif') {
+      body = await sharp(bytes)
+        .rotate()
+        .resize(DB_MAX_SIDE, DB_MAX_SIDE, { fit: 'inside', withoutEnlargement: true })
+        .toFormat(contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpeg', { quality: 82 })
+        .toBuffer()
+    }
+    await run('INSERT INTO media (key, type, bytes, created_at) VALUES (?, ?, ?, ?)', [key, contentType, body, Date.now()])
+    return `/media/${key}`
+  }
+}
+
+const useDb = process.env.IMAGE_STORE === 'database'
 let store: ImageStore | null = null
 
 function getStore(): ImageStore {
-  store ??= new LocalStore()
+  store ??= useDb ? new DbStore() : new LocalStore()
   return store
 }
 
@@ -68,8 +92,12 @@ export async function copyRemoteImage(url: string, folder = 'items') {
   }
 }
 
-/** Local store only: reads a stored file for the /media route. */
-export async function readLocalMedia(key: string) {
+/** Reads a stored image for the /media route and link previews. */
+export async function readMedia(key: string) {
+  if (useDb) {
+    const row = await one<{ type: string; bytes: ArrayBuffer }>('SELECT type, bytes FROM media WHERE key = ?', [key])
+    return row ? { bytes: Buffer.from(row.bytes), type: row.type } : null
+  }
   const file = path.resolve(UPLOAD_DIR, key)
   if (!file.startsWith(UPLOAD_DIR + path.sep)) return null
   try {

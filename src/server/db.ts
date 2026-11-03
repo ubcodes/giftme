@@ -126,6 +126,13 @@ const MIGRATIONS = [
   `CREATE INDEX IF NOT EXISTS idx_users_email_hash ON users(email_hash)`,
   // Which part of the banner shows: 0 = top, 100 = bottom.
   `ALTER TABLE wishlists ADD COLUMN cover_pos INTEGER NOT NULL DEFAULT 50`,
+  // Uploaded and copied images, when IMAGE_STORE=database (no persistent disk).
+  `CREATE TABLE IF NOT EXISTS media (
+     key TEXT PRIMARY KEY,
+     type TEXT NOT NULL,
+     bytes BLOB NOT NULL,
+     created_at INTEGER NOT NULL
+   )`,
 ]
 
 async function migrate() {

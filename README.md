@@ -124,6 +124,7 @@ managed Postgres and Redis, connected to Blnk Cloud for logs, traces and metrics
 | `EMAIL_FROM` | no | Sender, quoted, e.g. `"GiftMe <hello@yourdomain>"`. Until you verify a domain in Resend, use `"GiftMe <onboarding@resend.dev>"`, which only delivers to your own Resend account email. |
 | `VITE_REPO_URL` | no | Link to the public source code; shows a "View the code" button on the landing page. |
 | `UPLOAD_DIR` | no | Folder for uploaded and copied images. Default `uploads`. |
+| `IMAGE_STORE` | no | `database` keeps images in the app database instead of `UPLOAD_DIR`, for hosts with no persistent disk (how giftme.website runs). |
 
 ## How money moves
 

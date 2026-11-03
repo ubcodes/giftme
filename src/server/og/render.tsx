@@ -3,7 +3,7 @@ import sharp from 'sharp'
 import { countdownText, formatDate } from '@/lib/dates'
 import { occasion } from '@/lib/occasions'
 import { safeFetch } from '../net'
-import { readLocalMedia } from '../storage'
+import { readMedia } from '../storage'
 import gift from './gift.png?inline'
 import bellezaLatin from '@fontsource/belleza/files/belleza-latin-400-normal.woff?inline'
 import bellezaExt from '@fontsource/belleza/files/belleza-latin-ext-400-normal.woff?inline'
@@ -41,7 +41,7 @@ async function photo(url: string | null | undefined, w: number, h: number, pos =
   if (!url) return null
   try {
     let input: Buffer | null = null
-    if (url.startsWith('/media/')) input = (await readLocalMedia(url.slice('/media/'.length)))?.bytes ?? null
+    if (url.startsWith('/media/')) input = (await readMedia(url.slice('/media/'.length)))?.bytes ?? null
     else if (/^https?:\/\//.test(url)) {
       const res = await safeFetch(url, { accept: 'image/*', maxBytes: 8_000_000, timeoutMs: 5000 })
       if (res.status < 400) input = res.body
