@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { FollowCursor } from '@/components/liquid'
 import { Stage, type SceneName } from '@/components/feature-stages'
@@ -42,7 +42,16 @@ function Landing() {
         <FinalCta />
         <footer className="flex flex-col gap-2 border-t border-neutral-200 py-8 text-xs text-neutral-500 sm:flex-row sm:justify-between dark:border-neutral-800 dark:text-neutral-400">
           <span>GiftMe is free and open source.</span>
-          <span>© {new Date().getFullYear()} GiftMe · Made for celebrations</span>
+          <span>
+            © {new Date().getFullYear()} GiftMe · Made for celebrations ·{' '}
+            <Link to="/privacy" className="underline underline-offset-4">
+              Privacy
+            </Link>{' '}
+            ·{' '}
+            <Link to="/terms" className="underline underline-offset-4">
+              Terms
+            </Link>
+          </span>
         </footer>
       </div>
     </div>

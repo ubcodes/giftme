@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as ThankYouRouteImport } from './routes/thank-you'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StartRouteImport } from './routes/start'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
@@ -39,9 +41,19 @@ const ThankYouRoute = ThankYouRouteImport.update({
   path: '/thank-you',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StartRoute = StartRouteImport.update({
   id: '/start',
   path: '/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -128,7 +140,9 @@ const OgWHandleSlugRoute = OgWHandleSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/start': typeof StartRoute
+  '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
   '/welcome': typeof WelcomeRoute
   '/api/upload': typeof ApiUploadRoute
@@ -148,7 +162,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/privacy': typeof PrivacyRoute
   '/start': typeof StartRoute
+  '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
   '/welcome': typeof WelcomeRoute
   '/api/upload': typeof ApiUploadRoute
@@ -170,7 +186,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/start': typeof StartRoute
+  '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
   '/welcome': typeof WelcomeRoute
   '/api/upload': typeof ApiUploadRoute
@@ -193,7 +211,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/privacy'
     | '/start'
+    | '/terms'
     | '/thank-you'
     | '/welcome'
     | '/api/upload'
@@ -213,7 +233,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/privacy'
     | '/start'
+    | '/terms'
     | '/thank-you'
     | '/welcome'
     | '/api/upload'
@@ -234,7 +256,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/privacy'
     | '/start'
+    | '/terms'
     | '/thank-you'
     | '/welcome'
     | '/api/upload'
@@ -256,7 +280,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  PrivacyRoute: typeof PrivacyRoute
   StartRoute: typeof StartRoute
+  TermsRoute: typeof TermsRoute
   ThankYouRoute: typeof ThankYouRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiUploadRoute: typeof ApiUploadRoute
@@ -285,11 +311,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ThankYouRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/start': {
       id: '/start'
       path: '/start'
       fullPath: '/start'
       preLoaderRoute: typeof StartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -432,7 +472,9 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  PrivacyRoute: PrivacyRoute,
   StartRoute: StartRoute,
+  TermsRoute: TermsRoute,
   ThankYouRoute: ThankYouRoute,
   WelcomeRoute: WelcomeRoute,
   ApiUploadRoute: ApiUploadRoute,
