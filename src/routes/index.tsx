@@ -686,15 +686,33 @@ function FeatureSection({ feature: f, index }: { feature: FeatureSpec; index: nu
   )
 }
 
-const OCCASION_TINTS = [
-  'from-pink-400/30 to-purple-400/20',
-  'from-rose-300/30 to-amber-200/30',
-  'from-sky-300/30 to-teal-200/30',
-  'from-indigo-300/30 to-purple-300/20',
-  'from-emerald-300/30 to-lime-200/30',
-  'from-fuchsia-300/30 to-rose-200/30',
-  'from-blue-300/30 to-pink-200/30',
-]
+/**
+ * A short muted loop behind each occasion card (free Pexels clips, trimmed in public/video/occasions).
+ * It only loads and plays while the card is on screen; with reduced motion the still frame stays.
+ */
+function OccasionVideo({ id }: { id: string }) {
+  const ref = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    const video = ref.current
+    if (!video || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const io = new IntersectionObserver(([e]) => (e.isIntersecting ? video.play().catch(() => {}) : video.pause()), { threshold: 0.25 })
+    io.observe(video)
+    return () => io.disconnect()
+  }, [])
+  return (
+    <video
+      ref={ref}
+      aria-hidden="true"
+      src={`/video/occasions/${id}.mp4`}
+      poster={`/video/occasions/${id}.jpg`}
+      muted
+      loop
+      playsInline
+      preload="none"
+      className="absolute inset-0 size-full object-cover transition-transform duration-700 group-hover:scale-105"
+    />
+  )
+}
 
 /**
  * Occasions as a strip of 3D cards. On big screens the section pins and scrolling down slides
@@ -726,16 +744,18 @@ function Occasions() {
               key={o.id}
               href={START_HREF}
               data-cursor={`Start a ${o.label.toLowerCase()} list`}
-              className="group relative flex h-[380px] w-[280px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[28px] border border-white/70 bg-white/60 p-6 shadow-[0_30px_60px_-30px_rgb(88_28_135/0.35)] backdrop-blur-xl transition-transform duration-500 [transform:rotateY(-10deg)_translateZ(0)] [transform-style:preserve-3d] hover:[transform:rotateY(0deg)_translateZ(40px)] sm:w-[320px] dark:border-white/10 dark:bg-neutral-900/60"
+              className="group relative flex h-[380px] w-[280px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[28px] border border-white/70 bg-neutral-900 p-6 text-white shadow-[0_30px_60px_-30px_rgb(88_28_135/0.45)] transition-transform duration-500 [transform:rotateY(-10deg)_translateZ(0)] [transform-style:preserve-3d] hover:[transform:rotateY(0deg)_translateZ(40px)] sm:w-[320px] dark:border-white/10"
             >
-              <div aria-hidden="true" className={`absolute -top-16 -right-16 size-64 rounded-full bg-gradient-to-br opacity-80 blur-2xl ${OCCASION_TINTS[i % OCCASION_TINTS.length]}`} />
-              <span aria-hidden="true" className="font-display relative text-[96px] leading-none text-transparent [-webkit-text-stroke:1.2px_rgb(168_85_247/0.5)]">
+              <OccasionVideo id={o.id} />
+              {/* Keeps the words readable over any frame, with a hint of brand purple. */}
+              <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#1a0b2e]/90 via-[#1a0b2e]/25 to-[#1a0b2e]/10" />
+              <span aria-hidden="true" className="font-display relative text-[96px] leading-none text-transparent [-webkit-text-stroke:1.2px_rgb(255_255_255/0.75)]">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="relative flex flex-col gap-2">
                 <span className="font-display text-4xl leading-none">{o.label}</span>
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">{o.blurb}</span>
-                <span className="mt-2 text-sm text-purple-700 transition-transform duration-300 group-hover:translate-x-1 dark:text-purple-300">Start one →</span>
+                <span className="text-sm text-white/80">{o.blurb}</span>
+                <span className="mt-2 text-sm text-pink-200 transition-transform duration-300 group-hover:translate-x-1">Start one →</span>
               </div>
             </a>
           ))}
