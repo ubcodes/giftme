@@ -7,6 +7,7 @@ music and sound effects are synthesized. Shot list: [docs/shotlist.md](docs/shot
 ```
 film/timeline.js   scenes, voice placement and sound cues (local times, so beats can be inserted)
 film/index.html    the film; open it through a local server to watch it live
+film/gifts3d.js    the 3D gift (same as the landing hero) and celebration items, via three.js
 film/audio.mjs     score + SFX + voice stems → out/*.wav
 film/captions.mjs  WebVTT captions from the voice lines
 scripts/           demo data and real-screen captures
@@ -29,10 +30,12 @@ Tools live in the global kit at `~/.claude/skills/motion-reel/kit` (render, sfx,
    node film/audio.mjs
    node film/captions.mjs > ../public/video/giftme-film.vtt
    K=~/.claude/skills/motion-reel/kit
-   node $K/render.mjs --html film/index.html --w 1920 --h 1080 --fps 60 --sub 4 --dur 39.5 --out out/silent.mp4
+   node $K/render.mjs --gpu --root .. --html film/index.html --w 1920 --h 1080 --fps 60 --sub 4 --dur 39.5 --out out/silent.mp4
    VOICE_GAIN=1.7 MUSIC_GAIN=0.3 SFX_GAIN=1.1 bash $K/mix.sh out/silent.mp4 out/voice.wav out/music.wav out/sfx.wav out/final.mp4
    ```
-3. Watch live while editing: `node $K/render.mjs --html film/index.html --serve --port 4400`, then open
+   `--gpu` matters: the 3D gifts (film/gifts3d.js, three.js) are ~50x slower in the software renderer.
+   `--root ..` serves the repo, because the film imports three from node_modules.
+3. Watch live while editing: `node $K/render.mjs --root .. --html film/index.html --serve --port 4400`, then open
    the printed URL (add `&t=14` to start at 14 s).
 
 The voice recordings (`audio/`), renders (`out/`) and `demo.db` are not committed.
