@@ -7,7 +7,7 @@ import { LiquidGlass } from '@/components/liquid'
 import { getViewerFn } from '@/server/fns/account'
 import { shareMeta } from '@/lib/share'
 
-const SITE_DESCRIPTION = 'Make a wishlist for any occasion, share one link, and let friends chip in or reserve a gift. Paid in naira.'
+const SITE_DESCRIPTION = 'Make a wishlist for any occasion, share one link, and let friends chip in or reserve a gift.'
 
 export const Route = createRootRoute({
   beforeLoad: async () => ({ viewer: await getViewerFn() }),
