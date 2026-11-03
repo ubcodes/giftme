@@ -3,7 +3,7 @@ import { FollowButton, SocialLinks } from '@/components/friends'
 import { ThemeToggle } from '@/components/theme'
 import { MyPagesLink } from '@/components/visitor-nav'
 import { Avatar, Glow, Logo, glassCard } from '@/components/ui'
-import { shareMeta } from '@/lib/share'
+import { previewVersion, shareMeta } from '@/lib/share'
 import { getPublicProfileFn } from '@/server/fns/guest'
 import { formatDate } from '@/lib/dates'
 import { occasion } from '@/lib/occasions'
@@ -25,7 +25,7 @@ export const Route = createFileRoute('/w/$handle/')({
           siteUrl: loaderData.siteUrl,
           title: `${loaderData.owner.displayName}'s wishlists`,
           description,
-          image: loaderData.owner.avatarUrl,
+          image: `/og/u/${params.handle}?v=${previewVersion([loaderData.owner.avatarUrl, loaderData.owner.displayName, loaderData.wishlists.length])}`,
           path: `/w/${params.handle}`,
         }),
       ],

@@ -11,7 +11,7 @@ import { countdownText, formatDate } from '@/lib/dates'
 import { naira } from '@/lib/format'
 import { occasion } from '@/lib/occasions'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/ui'
-import { shareMeta } from '@/lib/share'
+import { previewVersion, shareMeta } from '@/lib/share'
 
 export const Route = createFileRoute('/w/$handle/$slug')({
   loader: async ({ params }) => {
@@ -21,7 +21,7 @@ export const Route = createFileRoute('/w/$handle/$slug')({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.found) return { meta: [{ title: 'Wishlist not found · GiftMe' }] }
-    const { owner, wishlist } = loaderData
+    const { owner, wishlist, items } = loaderData
     const title = `${wishlist.title} · ${owner.displayName.split(' ')[0]}'s wishlist`
     const description = wishlist.intro ?? `Chip in toward a gift for ${owner.displayName}, or reserve one to buy yourself.`
     return {
@@ -32,7 +32,7 @@ export const Route = createFileRoute('/w/$handle/$slug')({
           siteUrl: loaderData.siteUrl,
           title,
           description,
-          image: wishlist.coverUrl ?? owner.avatarUrl,
+          image: `/og/w/${params.handle}/${params.slug}?v=${previewVersion([wishlist, owner.avatarUrl, items.map((i) => [i.imageUrl, i.priceNgn, i.mostWanted, i.state])])}`,
           path: `/w/${params.handle}/${params.slug}`,
         }),
       ],

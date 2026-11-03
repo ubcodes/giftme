@@ -15,6 +15,7 @@ import { Route as StartRouteImport } from './routes/start'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as OgSiteRouteImport } from './routes/og/site'
 import { Route as MediaSplatRouteImport } from './routes/media/$'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardNewRouteImport } from './routes/dashboard/new'
@@ -23,8 +24,10 @@ import { Route as DashboardAdminRouteImport } from './routes/dashboard/admin'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as WHandleIndexRouteImport } from './routes/w/$handle/index'
 import { Route as WHandleSlugRouteImport } from './routes/w/$handle/$slug'
+import { Route as OgUHandleRouteImport } from './routes/og/u/$handle'
 import { Route as DashboardWIdRouteImport } from './routes/dashboard/w/$id'
 import { Route as ApiPaystackWebhookRouteImport } from './routes/api/paystack/webhook'
+import { Route as OgWHandleSlugRouteImport } from './routes/og/w/$handle/$slug'
 
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
@@ -55,6 +58,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRoute,
+} as any)
+const OgSiteRoute = OgSiteRouteImport.update({
+  id: '/og/site',
+  path: '/og/site',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const MediaSplatRoute = MediaSplatRouteImport.update({
   id: '/media/$',
@@ -96,6 +104,11 @@ const WHandleSlugRoute = WHandleSlugRouteImport.update({
   path: '/w/$handle/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OgUHandleRoute = OgUHandleRouteImport.update({
+  id: '/og/u/$handle',
+  path: '/og/u/$handle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardWIdRoute = DashboardWIdRouteImport.update({
   id: '/w/$id',
   path: '/w/$id',
@@ -104,6 +117,11 @@ const DashboardWIdRoute = DashboardWIdRouteImport.update({
 const ApiPaystackWebhookRoute = ApiPaystackWebhookRouteImport.update({
   id: '/api/paystack/webhook',
   path: '/api/paystack/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OgWHandleSlugRoute = OgWHandleSlugRouteImport.update({
+  id: '/og/w/$handle/$slug',
+  path: '/og/w/$handle/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -119,11 +137,14 @@ export interface FileRoutesByFullPath {
   '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/media/$': typeof MediaSplatRoute
+  '/og/site': typeof OgSiteRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/paystack/webhook': typeof ApiPaystackWebhookRoute
   '/dashboard/w/$id': typeof DashboardWIdRoute
+  '/og/u/$handle': typeof OgUHandleRoute
   '/w/$handle/$slug': typeof WHandleSlugRoute
   '/w/$handle': typeof WHandleIndexRoute
+  '/og/w/$handle/$slug': typeof OgWHandleSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -136,11 +157,14 @@ export interface FileRoutesByTo {
   '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/media/$': typeof MediaSplatRoute
+  '/og/site': typeof OgSiteRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/paystack/webhook': typeof ApiPaystackWebhookRoute
   '/dashboard/w/$id': typeof DashboardWIdRoute
+  '/og/u/$handle': typeof OgUHandleRoute
   '/w/$handle/$slug': typeof WHandleSlugRoute
   '/w/$handle': typeof WHandleIndexRoute
+  '/og/w/$handle/$slug': typeof OgWHandleSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -155,11 +179,14 @@ export interface FileRoutesById {
   '/dashboard/new': typeof DashboardNewRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/media/$': typeof MediaSplatRoute
+  '/og/site': typeof OgSiteRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/paystack/webhook': typeof ApiPaystackWebhookRoute
   '/dashboard/w/$id': typeof DashboardWIdRoute
+  '/og/u/$handle': typeof OgUHandleRoute
   '/w/$handle/$slug': typeof WHandleSlugRoute
   '/w/$handle/': typeof WHandleIndexRoute
+  '/og/w/$handle/$slug': typeof OgWHandleSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -175,11 +202,14 @@ export interface FileRouteTypes {
     | '/dashboard/new'
     | '/dashboard/settings'
     | '/media/$'
+    | '/og/site'
     | '/dashboard/'
     | '/api/paystack/webhook'
     | '/dashboard/w/$id'
+    | '/og/u/$handle'
     | '/w/$handle/$slug'
     | '/w/$handle'
+    | '/og/w/$handle/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -192,11 +222,14 @@ export interface FileRouteTypes {
     | '/dashboard/new'
     | '/dashboard/settings'
     | '/media/$'
+    | '/og/site'
     | '/dashboard'
     | '/api/paystack/webhook'
     | '/dashboard/w/$id'
+    | '/og/u/$handle'
     | '/w/$handle/$slug'
     | '/w/$handle'
+    | '/og/w/$handle/$slug'
   id:
     | '__root__'
     | '/'
@@ -210,11 +243,14 @@ export interface FileRouteTypes {
     | '/dashboard/new'
     | '/dashboard/settings'
     | '/media/$'
+    | '/og/site'
     | '/dashboard/'
     | '/api/paystack/webhook'
     | '/dashboard/w/$id'
+    | '/og/u/$handle'
     | '/w/$handle/$slug'
     | '/w/$handle/'
+    | '/og/w/$handle/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -225,9 +261,12 @@ export interface RootRouteChildren {
   WelcomeRoute: typeof WelcomeRoute
   ApiUploadRoute: typeof ApiUploadRoute
   MediaSplatRoute: typeof MediaSplatRoute
+  OgSiteRoute: typeof OgSiteRoute
   ApiPaystackWebhookRoute: typeof ApiPaystackWebhookRoute
+  OgUHandleRoute: typeof OgUHandleRoute
   WHandleSlugRoute: typeof WHandleSlugRoute
   WHandleIndexRoute: typeof WHandleIndexRoute
+  OgWHandleSlugRoute: typeof OgWHandleSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -273,6 +312,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/og/site': {
+      id: '/og/site'
+      path: '/og/site'
+      fullPath: '/og/site'
+      preLoaderRoute: typeof OgSiteRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/media/$': {
       id: '/media/$'
@@ -330,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WHandleSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/og/u/$handle': {
+      id: '/og/u/$handle'
+      path: '/og/u/$handle'
+      fullPath: '/og/u/$handle'
+      preLoaderRoute: typeof OgUHandleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/w/$id': {
       id: '/dashboard/w/$id'
       path: '/w/$id'
@@ -342,6 +395,13 @@ declare module '@tanstack/react-router' {
       path: '/api/paystack/webhook'
       fullPath: '/api/paystack/webhook'
       preLoaderRoute: typeof ApiPaystackWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/og/w/$handle/$slug': {
+      id: '/og/w/$handle/$slug'
+      path: '/og/w/$handle/$slug'
+      fullPath: '/og/w/$handle/$slug'
+      preLoaderRoute: typeof OgWHandleSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -377,9 +437,12 @@ const rootRouteChildren: RootRouteChildren = {
   WelcomeRoute: WelcomeRoute,
   ApiUploadRoute: ApiUploadRoute,
   MediaSplatRoute: MediaSplatRoute,
+  OgSiteRoute: OgSiteRoute,
   ApiPaystackWebhookRoute: ApiPaystackWebhookRoute,
+  OgUHandleRoute: OgUHandleRoute,
   WHandleSlugRoute: WHandleSlugRoute,
   WHandleIndexRoute: WHandleIndexRoute,
+  OgWHandleSlugRoute: OgWHandleSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
