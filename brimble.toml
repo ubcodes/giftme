@@ -33,6 +33,7 @@ UPLOAD_DIR = "/data/uploads"
 BLNK_URL = "https://giftme-blnk-blnk-test.brimble.app"
 USD_NGN_RATE = "1500"
 PLATFORM_FEE_PERCENT = "0"
+VITE_REPO_URL = "https://github.com/ubcodes/giftme"
 
 # Set these in the Brimble dashboard (Environment variables), never in this file.
 [services.giftme.secrets]
