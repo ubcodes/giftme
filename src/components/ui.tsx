@@ -217,7 +217,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className={`m-auto rounded-2xl bg-neutral-50 p-0 text-neutral-900 shadow-2xl dark:bg-neutral-900 dark:text-neutral-100 ${
+      className={`mx-auto mt-4 mb-auto max-h-[calc(100dvh-32px)] rounded-2xl sm:mt-[10vh] sm:max-h-[80vh] bg-neutral-50 p-0 text-neutral-900 shadow-2xl dark:bg-neutral-900 dark:text-neutral-100 ${
         wide ? 'w-[min(760px,calc(100vw-32px))]' : 'w-[min(440px,calc(100vw-32px))]'
       }`}
     >
