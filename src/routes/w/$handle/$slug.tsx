@@ -62,6 +62,8 @@ function PublicWishlist() {
   const { owner, wishlist, items, minContribution, acceptsMoney } = data
   const gifts = items.filter((i) => i.kind === 'gift')
   const complete = gifts.filter((i) => i.state !== 'open').length
+  // The bar fills with partial gifts too; the text still counts finished ones.
+  const overall = gifts.reduce((sum, i) => sum + (i.state !== 'open' ? 100 : (i.percent ?? 0)), 0) / (gifts.length || 1)
   const countdown = wishlist.eventDate ? countdownText(wishlist.eventDate) : null
   const firstName = owner.displayName.split(' ')[0]
   // Only the owner sees why there's no Contribute button; guests just see Reserve.
@@ -104,7 +106,7 @@ function PublicWishlist() {
             </p>
             {gifts.length > 0 && (
               <div className="flex max-w-md items-center gap-4 text-sm text-neutral-500 dark:text-neutral-400">
-                <Bar percent={(complete / gifts.length) * 100} />
+                <Bar percent={overall} />
                 <span className="shrink-0">
                   {complete} of {gifts.length} complete
                 </span>

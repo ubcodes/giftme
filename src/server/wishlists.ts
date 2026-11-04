@@ -215,7 +215,8 @@ export async function progressFor(item: ItemRow, reserved: Set<string>): Promise
   return {
     raisedKobo: s.raisedKobo,
     paidOutKobo: s.paidOutKobo,
-    percent: priceKobo ? Math.min(100, Math.floor((s.raisedKobo / priceKobo) * 100)) : null,
+    // Any gift at all shows at least 1%, so a small first gift doesn't read as 0%.
+    percent: priceKobo ? Math.min(100, Math.max(s.raisedKobo > 0 ? 1 : 0, Math.floor((s.raisedKobo / priceKobo) * 100))) : null,
     remainingNgn: priceKobo ? Math.max(0, Math.ceil((priceKobo - s.raisedKobo) / 100)) : null,
     state: funded || (item.received && item.kind === 'gift') ? 'funded' : isReserved ? 'reserved' : 'open',
     // Reserving means a guest buys the thing themselves, so only gifts, and only before any money is in.

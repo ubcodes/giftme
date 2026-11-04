@@ -3,7 +3,8 @@
 
 export async function sendEmail(msg: { to: string; subject: string; text: string; replyTo?: string }) {
   const key = process.env.RESEND_API_KEY
-  const from = process.env.EMAIL_FROM
+  // Dashboards often keep the quotes from a .env line ("GiftMe <hello@…>"), which Resend rejects.
+  const from = process.env.EMAIL_FROM?.trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
   if (!key || !from) {
     console.info(`[email] (not sent: no RESEND_API_KEY) to=${msg.to} subject="${msg.subject}"\n${msg.text}`)
     return false
