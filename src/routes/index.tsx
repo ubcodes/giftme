@@ -1,7 +1,8 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FollowCursor } from '@/components/liquid'
 import { Stage, type SceneName } from '@/components/feature-stages'
+import { GiftScene } from '@/components/lazy-gift-scene'
 import { Film } from '@/components/film'
 import { ThemeToggle } from '@/components/theme'
 import { useMagnetic, useScrollVar, useSmoothScroll } from '@/lib/scroll'
@@ -160,7 +161,6 @@ function Nav({ signedIn }: { signedIn: boolean }) {
 
 const ROTATING = ['birthday', 'wedding', 'baby shower', 'graduation', 'housewarming', 'anniversary']
 
-const GiftScene = lazy(() => import('@/components/gift-scene'))
 
 /**
  * A full-screen hero pinned while you scroll through it: a 3D gift drops in, and as you
@@ -208,9 +208,7 @@ function Hero() {
       <div className="sticky top-0 h-[100svh] overflow-hidden">
         <div aria-hidden="true" className="absolute inset-0">
           {scene && (
-            <Suspense fallback={null}>
-              <GiftScene progress={progress} still={scene.still} active={active} compact={scene.compact} />
-            </Suspense>
+            <GiftScene progress={progress} still={scene.still} active={active} compact={scene.compact} />
           )}
         </div>
 
@@ -937,9 +935,7 @@ function FinalCta() {
     <section ref={section} className="relative overflow-hidden border-t border-neutral-200/80 pt-10 pb-28 text-center dark:border-neutral-800">
       <div aria-hidden="true" className="relative mx-auto h-[300px] w-full max-w-xl sm:h-[360px]">
         {scene && (
-          <Suspense fallback={null}>
-            <GiftScene progress={closed} still={scene.still} active={active} compact={scene.compact} layout="center" />
-          </Suspense>
+          <GiftScene progress={closed} still={scene.still} active={active} compact={scene.compact} layout="center" />
         )}
       </div>
       <div className="relative flex flex-col items-center gap-6">

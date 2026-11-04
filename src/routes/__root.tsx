@@ -35,6 +35,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { viewer } = Route.useRouteContext()
+  useReloadAfterDeploy()
   return (
     <AuthProvider mode={viewer?.mode ?? 'off'} publishableKey={viewer?.publishableKey ?? null}>
       <LiquidGlass />
@@ -42,6 +43,36 @@ function RootComponent() {
       <Outlet />
     </AuthProvider>
   )
+}
+
+/**
+ * A tab left open across a deploy still points at the old build's files, which are gone, so the
+ * next page or 3D scene fails to download. Reload once to pick up the new build; the flag stops
+ * a loop if the files really are unreachable, and clears once a page has loaded fine.
+ */
+function useReloadAfterDeploy() {
+  useEffect(() => {
+    const onError = (e: Event) => {
+      try {
+        if (sessionStorage.getItem('gm-reloaded')) return
+        sessionStorage.setItem('gm-reloaded', '1')
+      } catch {
+        return
+      }
+      e.preventDefault()
+      location.reload()
+    }
+    window.addEventListener('vite:preloadError', onError)
+    const settled = setTimeout(() => {
+      try {
+        sessionStorage.removeItem('gm-reloaded')
+      } catch {}
+    }, 10_000)
+    return () => {
+      window.removeEventListener('vite:preloadError', onError)
+      clearTimeout(settled)
+    }
+  }, [])
 }
 
 /** A thin gradient line along the top while the next page loads. */

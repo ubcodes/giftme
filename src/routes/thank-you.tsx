@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { z } from 'zod'
+import { GiftScene, preloadGiftScene } from '@/components/lazy-gift-scene'
 import { Glow } from '@/components/ui'
 import { naira } from '@/lib/format'
 import { primaryButton } from '@/lib/ui'
@@ -12,7 +13,6 @@ export const Route = createFileRoute('/thank-you')({
   component: ThankYou,
 })
 
-const GiftScene = lazy(() => import('@/components/gift-scene'))
 type Receipt = { amountNgn: number; item: string; ownerFirstName: string }
 
 function ThankYou() {
@@ -28,7 +28,7 @@ function ThankYou() {
     // Start fetching the 3D box while the payment is confirmed, so it's ready to drop in.
     const probe = document.createElement('canvas')
     if (probe.getContext('webgl2') || probe.getContext('webgl')) {
-      void import('@/components/gift-scene')
+      void preloadGiftScene()
       setScene({ still: window.matchMedia('(prefers-reduced-motion: reduce)').matches })
     }
   }, [])
@@ -74,9 +74,7 @@ function ThankYou() {
         {scene && status !== 'failed' && (
           <div aria-hidden="true" className="-mb-4 h-56 w-full sm:h-64">
             {status === 'success' && (
-              <Suspense fallback={null}>
-                <GiftScene progress={closed} still={scene.still} active compact layout="thanks" />
-              </Suspense>
+              <GiftScene progress={closed} still={scene.still} active compact layout="thanks" />
             )}
           </div>
         )}
