@@ -1,4 +1,17 @@
 @import 'tailwindcss';
+/* Fonts are served from our own domain: no extra connections to Google before text shows. */
+@import '@fontsource/bilbo/latin-400.css';
+@import '@fontsource/bilbo/latin-ext-400.css';
+@import '@fontsource/belleza/latin-400.css';
+@import '@fontsource/belleza/latin-ext-400.css';
+@import '@fontsource/cormorant-garamond/latin-400.css';
+@import '@fontsource/cormorant-garamond/latin-ext-400.css';
+@import '@fontsource/cormorant-garamond/latin-500.css';
+@import '@fontsource/cormorant-garamond/latin-ext-500.css';
+@import '@fontsource/cormorant-garamond/latin-600.css';
+@import '@fontsource/cormorant-garamond/latin-ext-600.css';
+@import '@fontsource/cormorant-garamond/latin-400-italic.css';
+@import '@fontsource/cormorant-garamond/latin-ext-400-italic.css';
 
 /* Theme follows the visitor's system until they pick one with the toggle. */
 @custom-variant dark (&:where(.dark, .dark *));

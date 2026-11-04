@@ -13,6 +13,11 @@ export function Film() {
   const [mode, setMode] = useState<'idle' | 'muted' | 'sound'>('idle')
   const modeRef = useRef(mode)
   modeRef.current = mode
+  // Phones get the 720p cut (about half the download); the source is picked once on load.
+  const [src, setSrc] = useState<string>()
+  useEffect(() => {
+    setSrc(window.innerWidth < 900 ? '/video/giftme-film-720.mp4' : '/video/giftme-film.mp4')
+  }, [])
 
   useEffect(() => {
     const v = video.current
@@ -72,7 +77,7 @@ export function Film() {
       <video
         ref={video}
         className="block aspect-video w-full"
-        src="/video/giftme-film.mp4"
+        src={src}
         poster="/video/giftme-film.jpg"
         preload="metadata"
         playsInline

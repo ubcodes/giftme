@@ -1,6 +1,6 @@
-import { ContactShadows, Environment, Float, Lightformer, RoundedBox, useTexture } from '@react-three/drei'
+import { ContactShadows, Environment, Float, Lightformer, PerformanceMonitor, RoundedBox, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Suspense, useEffect, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { clamp, easeInOut, prog, spring } from '@/lib/motion'
 
@@ -35,14 +35,18 @@ const ITEMS = [
 ]
 
 export default function GiftScene(props: SceneProps) {
+  // Start sharp; if the device starts dropping frames, render fewer pixels instead of stuttering.
+  const best = props.compact ? 2.5 : 2
+  const [dpr, setDpr] = useState(() => Math.min(best, typeof window === 'undefined' ? 1 : window.devicePixelRatio))
   return (
     <Canvas
-      dpr={[1, props.compact ? 2.5 : 2]}
+      dpr={dpr}
       frameloop={props.active && !props.still ? 'always' : 'demand'}
       camera={{ position: [0, 0.9, props.layout === 'hero' || !props.layout ? (props.compact ? 9.6 : 8.2) : 7], fov: 34 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       style={{ pointerEvents: 'none' }}
     >
+      <PerformanceMonitor onDecline={() => setDpr((d) => Math.max(1, d - 0.5))} flipflops={3} onFallback={() => setDpr(1)} />
       <ambientLight intensity={0.55} />
       <directionalLight position={[4, 6, 5]} intensity={1.6} color="#fff6f0" />
       <directionalLight position={[-5, 2, -3]} intensity={0.6} color="#c4b5fd" />
@@ -57,7 +61,7 @@ export default function GiftScene(props: SceneProps) {
         <Gift {...props} />
       </Suspense>
       {props.layout !== 'center' && <Confetti still={props.still} compact={props.compact} />}
-      <ContactShadows position={[0, -1.25, 0]} opacity={0.32} blur={2.6} far={4} scale={9} color="#581c87" />
+      <ContactShadows position={[0, -1.25, 0]} opacity={0.32} blur={2.6} far={4} scale={9} resolution={256} color="#581c87" />
     </Canvas>
   )
 }

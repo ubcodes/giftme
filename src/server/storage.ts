@@ -36,22 +36,25 @@ class LocalStore implements ImageStore {
   }
 }
 
-// Big photos are scaled down before going into the database: phones send 4–6 MB pictures,
-// and nothing on the site shows them wider than this.
-const DB_MAX_BYTES = 1_000_000
-const DB_MAX_SIDE = 2000
+// Photos are scaled down and turned into WebP before going into the database: phones send
+// 4–6 MB pictures, nothing on the site shows them wider than this, and WebP is about a third
+// the size of a JPEG at the same quality, so lists load fast on mobile data.
+const DB_MAX_BYTES = 150_000
+const DB_MAX_SIDE = 1600
 
 class DbStore implements ImageStore {
   async put(key: string, bytes: Buffer, contentType: string) {
     let body = bytes
+    let type = contentType
     if (bytes.byteLength > DB_MAX_BYTES && contentType !== 'image/gif') {
-      body = await sharp(bytes)
+      const smaller = await sharp(bytes)
         .rotate()
         .resize(DB_MAX_SIDE, DB_MAX_SIDE, { fit: 'inside', withoutEnlargement: true })
-        .toFormat(contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpeg', { quality: 82 })
+        .webp({ quality: 80 })
         .toBuffer()
+      if (smaller.byteLength < bytes.byteLength) [body, type] = [smaller, 'image/webp']
     }
-    await run('INSERT INTO media (key, type, bytes, created_at) VALUES (?, ?, ?, ?)', [key, contentType, body, Date.now()])
+    await run('INSERT INTO media (key, type, bytes, created_at) VALUES (?, ?, ?, ?)', [key, type, body, Date.now()])
     return `/media/${key}`
   }
 }
