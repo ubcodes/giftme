@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { recordOfflineGift, recordPendingGift, recordSplit, settlePendingGift } from './blnk'
 import { one, query, run } from './db'
+import { payoutLabel } from '@/lib/dates'
 import { sendEmail } from './email'
 import { UserError } from './errors'
 import { initializePayment, listBanks, resolveAccount, upsertSubaccount, type PaystackStatus } from './paystack'
@@ -225,6 +226,17 @@ export async function settleContribution(reference: string, paystackStatus: Pays
   return finalStatus
 }
 
+/** What the thank-you page shows the giver once their payment is in. */
+export async function giftReceipt(reference: string) {
+  const r = await one<{ amount_kobo: number; title: string; display_name: string }>(
+    `SELECT c.amount_kobo, i.title, u.display_name FROM contributions c
+     JOIN items i ON i.id = c.item_id JOIN users u ON u.id = c.owner_id
+     WHERE c.reference = ? AND c.status = 'success'`,
+    [reference],
+  )
+  return r ? { amountNgn: Number(r.amount_kobo) / 100, item: r.title, ownerFirstName: r.display_name.split(' ')[0] } : null
+}
+
 async function recordSplitFor(reference: string) {
   const c = await one<{ item_id: string; wishlist_id: string; owner_id: string; amount_kobo: number; fee_kobo: number }>(
     `SELECT * FROM contributions WHERE reference = ? AND status = 'success' AND source = 'paystack' AND split_at IS NULL`,
@@ -264,7 +276,8 @@ async function notifyOwner(ownerId: string, itemTitle: string, amountKobo: numbe
       '',
       `${name ?? 'A friend'} just gave ${amount} toward "${itemTitle}".`,
       message ? `\nTheir note: "${message}"\n` : '',
-      `It will be settled to your bank account. See every gift on your dashboard: ${siteUrl()}/dashboard`,
+      `Paystack pays it into your bank account the next business day, so expect it by ${payoutLabel(Date.now())}.`,
+      `See every gift on your dashboard: ${siteUrl()}/dashboard`,
       '',
       'GiftMe',
     ].join('\n'),

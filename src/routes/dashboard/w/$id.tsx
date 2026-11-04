@@ -21,7 +21,7 @@ import {
   setItemFlagsFn,
   updateWishlistFn,
 } from '@/server/fns/owner'
-import { countdownText, formatDate } from '@/lib/dates'
+import { countdownText, formatDate, payoutDate, payoutLabel } from '@/lib/dates'
 import { naira } from '@/lib/format'
 import { occasion } from '@/lib/occasions'
 import { inputClass, primaryButton, secondaryButton } from '@/lib/ui'
@@ -31,7 +31,7 @@ const WISHLIST_TOUR: TourStep[] = [
   { target: 'title', title: 'This is your wishlist', body: 'Change the name, occasion or date any time with the pencil. Guests see a countdown to the day.' },
   { target: 'add', title: 'Add what you’d love', body: 'Paste a link from any shop, or type what you want and pick from shops that sell it. A cash fund works for bigger dreams.' },
   { target: 'gifts', title: 'Put them in order', body: 'Drag gifts to reorder them, and star the ones you want most. Guests see the same order.' },
-  { target: 'bank', title: 'Add your bank account', body: 'Friends can only send money once you do. Every gift goes straight to your bank; GiftMe never holds it.' },
+  { target: 'bank', title: 'Add your bank account', body: 'Friends can only send money once you do. Every gift goes straight to your bank the next business day; GiftMe never holds it.' },
   { target: 'share', title: 'Share one link', body: 'Copy it or send it on WhatsApp. Friends don’t need an account to give.' },
   { target: 'guest', title: 'See what friends see', body: 'Open your list as a guest to check how it looks before you share it.' },
   { target: 'who-gave', title: 'Who gave, and thank you', body: 'Every gift, note and name lands here. Only you can see them, and you can send a thank-you in one tap.' },
@@ -243,6 +243,9 @@ function Editor() {
                     {naira(c.amountNgn)}
                     {c.status !== 'success' && <div className="text-xs text-amber-700 dark:text-amber-400">{c.status === 'pending' ? 'pending' : c.status}</div>}
                     {c.source === 'offline' && <div className="text-xs text-neutral-500">recorded by you</div>}
+                    {c.status === 'success' && c.source !== 'offline' && payoutDate(c.createdAt).getTime() > Date.now() && (
+                      <div className="text-xs text-neutral-500">in your bank by {payoutLabel(c.createdAt)}</div>
+                    )}
                   </td>
                   <td className="max-w-xs px-4 py-3 text-neutral-600 dark:text-neutral-400">{c.message}</td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">

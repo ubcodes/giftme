@@ -326,7 +326,9 @@ function ContributeDialog({ item, ownerFirstName, min, onClose }: { item: Public
         <button type="submit" disabled={busy || !amount} className={`min-h-12 text-[15px] ${primaryButton}`}>
           {busy ? 'Opening secure checkout…' : `Contribute ${amount ? naira(Number(amount)) : ''}`}
         </button>
-        <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">Pay by card, bank transfer or USSD.</p>
+        <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
+          Pay by card, bank transfer or USSD. It reaches {ownerFirstName}'s bank the next business day.
+        </p>
       </form>
     </Dialog>
   )

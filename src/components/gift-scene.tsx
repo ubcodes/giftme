@@ -15,8 +15,11 @@ export type SceneProps = {
   still: boolean
   active: boolean
   compact: boolean
-  /** 'hero' sits beside the headline; 'center' is the closing gift above the last call to action. */
-  layout?: 'hero' | 'center'
+  /**
+   * 'hero' sits beside the headline; 'center' is the closing gift above the last call to action;
+   * 'thanks' is the thank-you page: the box drops in, its lid hops, and nothing comes out.
+   */
+  layout?: 'hero' | 'center' | 'thanks'
 }
 
 const PURPLE = '#a855f7'
@@ -36,7 +39,7 @@ export default function GiftScene(props: SceneProps) {
     <Canvas
       dpr={[1, props.compact ? 2.5 : 2]}
       frameloop={props.active && !props.still ? 'always' : 'demand'}
-      camera={{ position: [0, 0.9, props.layout === 'center' ? 7 : props.compact ? 9.6 : 8.2], fov: 34 }}
+      camera={{ position: [0, 0.9, props.layout === 'hero' || !props.layout ? (props.compact ? 9.6 : 8.2) : 7], fov: 34 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       style={{ pointerEvents: 'none' }}
     >
@@ -64,8 +67,9 @@ function Gift({ progress, still, active, layout = 'hero' }: SceneProps) {
   // Wide screens put the hero gift to the right of the headline; tall ones below it.
   const wide = viewport.aspect > 1.15 && layout === 'hero'
   const baseX = wide ? viewport.width * 0.2 : 0
-  const baseY = layout === 'center' ? -0.2 : wide ? -0.45 : -viewport.height * 0.03
-  const size = layout === 'center' ? Math.min(1.25, viewport.width / 4.5) : wide ? 0.8 : Math.min(0.8, viewport.width / 7.2)
+  const centred = layout !== 'hero'
+  const baseY = centred ? -0.2 : wide ? -0.45 : -viewport.height * 0.03
+  const size = layout === 'thanks' ? Math.min(0.9, viewport.width / 5.5) : centred ? Math.min(1.25, viewport.width / 4.5) : wide ? 0.8 : Math.min(0.8, viewport.width / 7.2)
   const root = useRef<THREE.Group>(null)
   const body = useRef<THREE.Group>(null)
   const lid = useRef<THREE.Group>(null)
@@ -100,8 +104,10 @@ function Gift({ progress, still, active, layout = 'hero' }: SceneProps) {
 
     // The lid lifts and tips back as you scroll.
     const open = easeInOut(prog(p, 0.05, 0.45))
+    // On the thank-you page the lid hops twice after landing, like it's pleased.
+    const hop = layout === 'thanks' && !still && t > 0.75 ? Math.exp(-(t - 0.75) * 2.2) * Math.abs(Math.sin((t - 0.75) * 7)) * 0.45 : 0
     if (lid.current) {
-      lid.current.position.set(0, 0.86 + open * 1.35, -open * 0.45)
+      lid.current.position.set(0, 0.86 + open * 1.35 + hop, -open * 0.45)
       lid.current.rotation.set(-open * 0.6, 0, open * 0.18)
     }
 
@@ -132,7 +138,8 @@ function Gift({ progress, still, active, layout = 'hero' }: SceneProps) {
         <Ribbon size={[2.18, 0.4, 0.36]} />
         <Bow />
       </group>
-      {ITEMS.map((it, i) => (
+      {layout !== 'thanks' &&
+        ITEMS.map((it, i) => (
         <group
           key={it.img}
           ref={(el) => {
@@ -142,7 +149,7 @@ function Gift({ progress, still, active, layout = 'hero' }: SceneProps) {
         >
           <ItemCard img={it.img} price={it.price} />
         </group>
-      ))}
+        ))}
     </group>
   )
 }

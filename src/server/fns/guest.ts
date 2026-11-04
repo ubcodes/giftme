@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { attempt } from '../errors'
-import { MIN_CONTRIBUTION_NGN, publicProfile, publicWishlist, reserveItem, settleContribution, siteUrl, startContribution } from '../gifts'
+import { MIN_CONTRIBUTION_NGN, giftReceipt, publicProfile, publicWishlist, reserveItem, settleContribution, siteUrl, startContribution } from '../gifts'
 import { isFollowing } from '../friends'
 import { verifyPayment } from '../paystack'
 import { viewerRow } from '../users'
@@ -55,9 +55,9 @@ export const confirmPaymentFn = createServerFn({ method: 'POST' })
     try {
       const payment = await verifyPayment(data.reference)
       const status = await settleContribution(data.reference, payment.status, payment.amount)
-      return { status }
+      return { status, receipt: status === 'success' ? await giftReceipt(data.reference) : null }
     } catch (err) {
       console.error(err)
-      return { status: 'unknown' }
+      return { status: 'unknown', receipt: null }
     }
   })

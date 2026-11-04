@@ -41,7 +41,7 @@ function Settings() {
       <section id="payouts" className={`scroll-mt-10 rounded-3xl p-6 sm:p-8 ${glassCard}`}>
         <h2 className="font-display text-3xl">Where gifts go</h2>
         <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
-          Each gift settles straight to your bank. GiftMe never holds your money.
+          Each gift goes straight to your bank, the next business day after it's given (a Friday gift arrives on Monday). GiftMe never holds your money.
           {feePercent > 0 && ` A ${feePercent}% GiftMe fee is taken from each gift.`} A small card processing fee comes out of
           each gift.
         </p>
