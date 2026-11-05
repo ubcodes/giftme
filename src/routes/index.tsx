@@ -227,9 +227,11 @@ function Hero() {
             <h1 className="font-display text-[clamp(48px,9vw,148px)] leading-[0.86] font-normal tracking-[-0.02em]">
               <span className="block">The wishlist</span>
               <span className="block">for your</span>
+              {/* The gradient only paints inside the word's box, and the script's tails (g, y) hang
+                  below it; padding grows the box to cover them, negative margins keep the layout. */}
               <span
                 key={i}
-                className="word-in font-editorial inline-block bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 bg-clip-text pr-3 text-[1.25em] leading-[0.9] text-transparent"
+                className="word-in font-editorial -mx-[0.15em] -my-[0.3em] inline-block bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 bg-clip-text px-[0.15em] py-[0.3em] text-[1.25em] leading-[0.9] text-transparent"
               >
                 {ROTATING[i]}
               </span>
