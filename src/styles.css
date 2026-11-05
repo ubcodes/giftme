@@ -222,6 +222,12 @@ dialog::backdrop {
   transition-duration: 0.12s;
 }
 
+/* The same glass without the lens: for buttons that repeat down a page, where many SVG
+   backdrop filters at once would cost scrolling smoothness. */
+.liquid-lite::before {
+  backdrop-filter: blur(8px) saturate(170%);
+}
+
 /* Tinted glass for the main action. */
 .liquid-tint {
   background: linear-gradient(135deg, rgb(168 85 247 / 0.3), rgb(236 72 153 / 0.2) 55%, rgb(59 130 246 / 0.22));
