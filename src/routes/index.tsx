@@ -9,7 +9,7 @@ import { useMagnetic, useScrollVar, useSmoothScroll } from '@/lib/scroll'
 import { Bar, Logo, glassCard } from '@/components/ui'
 import { OCCASIONS } from '@/lib/occasions'
 import { REPO_URL } from '@/lib/site'
-import { primaryButton, secondaryButton } from '@/lib/ui'
+import { glassPrimary, glassSecondary, primaryButton } from '@/lib/ui'
 import { naira } from '@/lib/format'
 
 export const Route = createFileRoute('/')({
@@ -149,7 +149,7 @@ function Nav({ signedIn }: { signedIn: boolean }) {
           <a href="#open-source" className="hidden items-center gap-1.5 rounded-full px-3 py-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900 sm:inline-flex dark:text-neutral-400 dark:hover:text-neutral-100">
             <GitHubIcon size={14} /> Open source
           </a>
-          <a href={START_HREF} className={`inline-flex min-h-10 items-center px-4 text-sm ${secondaryButton}`}>
+          <a href={START_HREF} className={`inline-flex min-h-10 items-center px-4 text-sm ${glassSecondary}`}>
             {signedIn ? 'Your wishlists' : 'Sign in'}
           </a>
           <ThemeToggle />
@@ -244,10 +244,10 @@ function Hero() {
               gift to buy themselves. The money goes straight to your bank.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <a href={START_HREF} data-magnetic data-cursor="Let's go ✨" className={`inline-flex min-h-12 items-center px-6 text-[15px] ${primaryButton}`}>
+              <a href={START_HREF} data-magnetic data-cursor="Let's go ✨" className={`inline-flex min-h-12 items-center px-6 text-[15px] ${glassPrimary}`}>
                 Start your wishlist, it's free
               </a>
-              <a href="#how" className={`inline-flex min-h-12 items-center px-5 text-[15px] ${secondaryButton}`}>
+              <a href="#how" className={`inline-flex min-h-12 items-center px-5 text-[15px] ${glassSecondary}`}>
                 See how it works
               </a>
             </div>
