@@ -3,8 +3,9 @@ import { z } from 'zod'
 import { authMode, clerkPublishableKey, endDevSession, startDevSession } from '../auth'
 import { run } from '../db'
 import { isAdmin } from '../admin'
-import { attempt } from '../errors'
+import { attempt, UserError } from '../errors'
 import { siteUrl } from '../gifts'
+import { canCreateProfile, prelaunch } from '../waitlist'
 import { handleAvailable, normalizeHandle, requireUser, saveProfile, suggestHandle, toProfile, viewerRow } from '../users'
 
 export const getViewerFn = createServerFn({ method: 'GET' }).handler(async () => {
@@ -16,6 +17,9 @@ export const getViewerFn = createServerFn({ method: 'GET' }).handler(async () =>
     user: row ? toProfile(row) : null,
     isAdmin: isAdmin(row),
     siteUrl: siteUrl(),
+    prelaunch: prelaunch(),
+    // While pre-launch is on, only people let in from the waitlist can finish signing up.
+    canJoin: await canCreateProfile(row, isAdmin(row)),
   }
 })
 
@@ -63,6 +67,7 @@ export const saveProfileFn = createServerFn({ method: 'POST' })
   .handler(({ data }) =>
     attempt(async () => {
       const row = await requireUser()
+      if (!(await canCreateProfile(row, isAdmin(row)))) throw new UserError("GiftMe isn't open yet. You're on the waitlist, and we'll email you when it's your turn.")
       await saveProfile(row.id, data)
       return {}
     }),

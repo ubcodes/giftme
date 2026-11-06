@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 import { FollowCursor } from '@/components/liquid'
 import { Stage, type SceneName } from '@/components/feature-stages'
 import { GiftScene } from '@/components/lazy-gift-scene'
+import { z } from 'zod'
+import { Aurora } from '@/components/aurora'
+import { Waitlist } from '@/components/waitlist'
+import { getWaitlistCountFn } from '@/server/fns/waitlist'
 import { Film } from '@/components/film'
 import { ThemeToggle } from '@/components/theme'
 import { useMagnetic, useScrollVar, useSmoothScroll } from '@/lib/scroll'
@@ -13,8 +17,28 @@ import { glassPrimary, glassSecondary, primaryButton } from '@/lib/ui'
 import { naira } from '@/lib/format'
 
 export const Route = createFileRoute('/')({
-  component: Landing,
+  validateSearch: z.object({ ref: z.string().max(20).optional(), joined: z.string().max(20).optional(), preview: z.string().max(5).optional() }),
+  // Before launch the homepage is the waitlist; ?preview=1 still shows the full page.
+  loaderDeps: ({ search }) => ({ preview: search.preview }),
+  loader: async ({ context, deps }) => (context.viewer.prelaunch && !deps.preview ? getWaitlistCountFn() : null),
+  component: Home,
 })
+
+function Home() {
+  const { viewer } = Route.useRouteContext()
+  const waitlist = Route.useLoaderData()
+  const search = Route.useSearch()
+  if (!waitlist) return <Landing />
+  return (
+    <Waitlist
+      count={waitlist.count}
+      referral={search.ref}
+      pending={search.joined === 'pending'}
+      signedIn={!!viewer.user}
+      hasProfile={!!viewer.user?.handle}
+    />
+  )
+}
 
 const START_HREF = '/start'
 
@@ -62,17 +86,6 @@ function Landing() {
 // --- Building blocks -------------------------------------------------------------------
 
 /** Slowly drifting purple, pink and blue light behind the page. */
-function Aurora() {
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[1100px] overflow-hidden">
-      <div className="drift-a absolute -top-40 left-[8%] h-[480px] w-[560px] rounded-full bg-purple-400/30 blur-3xl dark:bg-purple-600/20" />
-      <div className="drift-b absolute -top-24 right-[4%] h-[420px] w-[520px] rounded-full bg-pink-400/25 blur-3xl dark:bg-pink-600/15" />
-      <div className="drift-c absolute top-64 left-1/3 h-[380px] w-[620px] rounded-full bg-blue-400/20 blur-3xl dark:bg-blue-600/15" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgb(0_0_0/0.06)_1px,transparent_0)] [background-size:28px_28px] [mask-image:linear-gradient(to_bottom,black,transparent_80%)] dark:bg-[radial-gradient(circle_at_1px_1px,rgb(255_255_255/0.06)_1px,transparent_0)]" />
-    </div>
-  )
-}
-
 /** Fades and lifts its children in when they scroll into view. */
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)

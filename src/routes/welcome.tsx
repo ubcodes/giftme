@@ -13,6 +13,7 @@ export const Route = createFileRoute('/welcome')({
     const user = context.viewer.user
     if (!user) throw redirect({ to: '/start' })
     if (user.handle) throw redirect({ to: '/dashboard' })
+    if (!context.viewer.canJoin) throw redirect({ to: '/', search: { joined: 'pending' } })
     return { user }
   },
   loader: () => suggestHandleFn(),

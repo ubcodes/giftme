@@ -133,6 +133,16 @@ const MIGRATIONS = [
      bytes BLOB NOT NULL,
      created_at INTEGER NOT NULL
    )`,
+  // The pre-launch waitlist. Each invite someone brings in moves them a day up the line.
+  `CREATE TABLE IF NOT EXISTS waitlist (
+     email TEXT PRIMARY KEY,
+     name TEXT,
+     code TEXT NOT NULL UNIQUE,
+     referred_by TEXT,
+     created_at INTEGER NOT NULL,
+     admitted_at INTEGER
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_waitlist_referred_by ON waitlist(referred_by)`,
 ]
 
 async function migrate() {
