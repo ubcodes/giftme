@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as WaitlistRouteImport } from './routes/waitlist'
 import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StartRouteImport } from './routes/start'
@@ -34,6 +35,11 @@ import { Route as OgWHandleSlugRouteImport } from './routes/og/w/$handle/$slug'
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WaitlistRoute = WaitlistRouteImport.update({
+  id: '/waitlist',
+  path: '/waitlist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ThankYouRoute = ThankYouRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
+  '/waitlist': typeof WaitlistRoute
   '/welcome': typeof WelcomeRoute
   '/api/upload': typeof ApiUploadRoute
   '/dashboard/admin': typeof DashboardAdminRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
+  '/waitlist': typeof WaitlistRoute
   '/welcome': typeof WelcomeRoute
   '/api/upload': typeof ApiUploadRoute
   '/dashboard/admin': typeof DashboardAdminRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
+  '/waitlist': typeof WaitlistRoute
   '/welcome': typeof WelcomeRoute
   '/api/upload': typeof ApiUploadRoute
   '/dashboard/admin': typeof DashboardAdminRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/start'
     | '/terms'
     | '/thank-you'
+    | '/waitlist'
     | '/welcome'
     | '/api/upload'
     | '/dashboard/admin'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/start'
     | '/terms'
     | '/thank-you'
+    | '/waitlist'
     | '/welcome'
     | '/api/upload'
     | '/dashboard/admin'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/start'
     | '/terms'
     | '/thank-you'
+    | '/waitlist'
     | '/welcome'
     | '/api/upload'
     | '/dashboard/admin'
@@ -284,6 +296,7 @@ export interface RootRouteChildren {
   StartRoute: typeof StartRoute
   TermsRoute: typeof TermsRoute
   ThankYouRoute: typeof ThankYouRoute
+  WaitlistRoute: typeof WaitlistRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiUploadRoute: typeof ApiUploadRoute
   MediaSplatRoute: typeof MediaSplatRoute
@@ -302,6 +315,13 @@ declare module '@tanstack/react-router' {
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/waitlist': {
+      id: '/waitlist'
+      path: '/waitlist'
+      fullPath: '/waitlist'
+      preLoaderRoute: typeof WaitlistRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/thank-you': {
@@ -476,6 +496,7 @@ const rootRouteChildren: RootRouteChildren = {
   StartRoute: StartRoute,
   TermsRoute: TermsRoute,
   ThankYouRoute: ThankYouRoute,
+  WaitlistRoute: WaitlistRoute,
   WelcomeRoute: WelcomeRoute,
   ApiUploadRoute: ApiUploadRoute,
   MediaSplatRoute: MediaSplatRoute,

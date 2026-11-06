@@ -30,8 +30,8 @@ BLNK_URL = "https://giftme-blnk-blnk-test.brimble.app"
 USD_NGN_RATE = "1500"
 PLATFORM_FEE_PERCENT = "0"
 VITE_REPO_URL = "https://github.com/ubcodes/giftme"
-# Pre-launch: the homepage is the waitlist and new accounts wait to be let in. Set to "0" to open up.
-PRELAUNCH = "1"
+# "1" makes new accounts wait on /waitlist until let in from the admin page; "0" lets anyone sign up.
+PRELAUNCH = "0"
 
 # Set these in the Brimble dashboard (Environment variables), never in this file.
 [services.giftme.secrets]

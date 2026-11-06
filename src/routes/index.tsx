@@ -3,10 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { FollowCursor } from '@/components/liquid'
 import { Stage, type SceneName } from '@/components/feature-stages'
 import { GiftScene } from '@/components/lazy-gift-scene'
-import { z } from 'zod'
 import { Aurora } from '@/components/aurora'
-import { Waitlist } from '@/components/waitlist'
-import { getWaitlistCountFn } from '@/server/fns/waitlist'
 import { Film } from '@/components/film'
 import { ThemeToggle } from '@/components/theme'
 import { useMagnetic, useScrollVar, useSmoothScroll } from '@/lib/scroll'
@@ -17,28 +14,8 @@ import { glassPrimary, glassSecondary, primaryButton } from '@/lib/ui'
 import { naira } from '@/lib/format'
 
 export const Route = createFileRoute('/')({
-  validateSearch: z.object({ ref: z.string().max(20).optional(), joined: z.string().max(20).optional(), preview: z.string().max(5).optional() }),
-  // Before launch the homepage is the waitlist; ?preview=1 still shows the full page.
-  loaderDeps: ({ search }) => ({ preview: search.preview }),
-  loader: async ({ context, deps }) => (context.viewer.prelaunch && !deps.preview ? getWaitlistCountFn() : null),
-  component: Home,
+  component: Landing,
 })
-
-function Home() {
-  const { viewer } = Route.useRouteContext()
-  const waitlist = Route.useLoaderData()
-  const search = Route.useSearch()
-  if (!waitlist) return <Landing />
-  return (
-    <Waitlist
-      count={waitlist.count}
-      referral={search.ref}
-      pending={search.joined === 'pending'}
-      signedIn={!!viewer.user}
-      hasProfile={!!viewer.user?.handle}
-    />
-  )
-}
 
 const START_HREF = '/start'
 

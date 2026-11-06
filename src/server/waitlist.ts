@@ -5,7 +5,7 @@ import { UserError } from './errors'
 import { siteUrl } from './gifts'
 import type { UserRow } from './users'
 
-// Pre-launch mode (PRELAUNCH=1): the homepage is a waitlist and new accounts wait to be let in.
+// The waitlist lives at /waitlist. With PRELAUNCH=1, new accounts also wait to be let in.
 // People who already have a profile, admins, and anyone let in from the admin page carry on as normal.
 
 export function prelaunch() {
@@ -41,7 +41,7 @@ async function standing(row: Row) {
     position: row.admitted_at ? 0 : Number(r?.ahead ?? 0) + 1,
     total: Number(r?.total ?? 0),
     admitted: !!row.admitted_at,
-    inviteUrl: `${siteUrl()}/?ref=${row.code}`,
+    inviteUrl: `${siteUrl()}/waitlist?ref=${row.code}`,
   }
 }
 

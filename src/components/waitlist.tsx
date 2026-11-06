@@ -18,7 +18,7 @@ const PROMISES = [
 ]
 
 /**
- * The pre-launch homepage (PRELAUNCH=1): join the waitlist, see your place, and share an
+ * The waitlist page (/waitlist): join the waitlist, see your place, and share an
  * invite link that moves you up the line. Your code is remembered so coming back shows it.
  */
 export function Waitlist(props: { count: number; referral?: string; pending?: boolean; signedIn: boolean; hasProfile: boolean }) {
